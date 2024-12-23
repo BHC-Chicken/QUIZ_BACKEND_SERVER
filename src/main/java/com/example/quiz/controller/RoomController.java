@@ -31,6 +31,7 @@ public class RoomController {
         RoomResponse roomResponse = roomProducerService.createRoom(roomRequest);
 
         return "redirect:/room/" + roomResponse.roomId();
+    }
 
     @GetMapping("/room-list")
     public ModelAndView getRoomList(@RequestParam(name = "page") Optional<Integer> page) {

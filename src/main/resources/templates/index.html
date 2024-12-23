@@ -45,7 +45,7 @@
                 <th></th>
             </tr>
             </thead>
-            <tbody>
+            <tbody id="room-table-body">
             <tr th:each="room : ${roomList.content}" th:id="'room-' + ${room.roomId}">
                 <td th:text="${room.roomId}"></td>
                 <td th:text="${room.roomName}"></td>

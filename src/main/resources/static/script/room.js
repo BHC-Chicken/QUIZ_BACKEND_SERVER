@@ -24,43 +24,23 @@ document.querySelectorAll('a').forEach(anchor =>
 );
 
 window.addEventListener("load", function () {
-    // HTML 요소에서 방 ID 목록을 읽어오기
     let roomsContainer = document.getElementById('roomsContainer');
-    let roomsData = roomsContainer.getAttribute('data-rooms');
-    let currentPageRooms = roomsData.split(',').map(Number);
 
     let sock = new SockJS('/updateOccupancy');
+    let stompClient = Stomp.over(sock);
 
-    sock.onopen = function() {
-        setInterval(function() {
-            sock.send(JSON.stringify(currentPageRooms));
-        }, 5000);
-    };
+    stompClient.connect({}, function (frame) {
+        console.log('Connected: ' + frame);
 
-    sock.onmessage = function (event) {
-        let occupancyList = JSON.parse(event.data);
+        stompClient.subscribe('/pub/occupancy', function (message) {
+            let room = JSON.parse(message.body);
 
-        occupancyList.forEach(function (occupancy) {
-            $('#room-' + occupancy.roomId + ' .current-people').text(occupancy.currentPeople);
+
+            if (room.currentPeople == 0) {
+                $('#room-' + room.roomId).remove();
+            } else {
+                $('#room-' + room.roomId + ' .current-people').text(room.currentPeople);
+            }
         });
-    };
-    // let stompClient = Stomp.over(socket);
-    //
-    // stompClient.connect({}, function(frame) {
-    //     console.log('Connected: ' + frame);
-    //
-    //     // 주기적으로 현재 페이지의 방 ID 목록을 서버에 전송
-    //     setInterval(function() {
-    //         stompClient.send('/room-people/updateOccupancy', {}, JSON.stringify(currentPageRooms));
-    //     }, 5000);
-    //
-    //     // 서버로부터 업데이트된 데이터를 수신하여 페이지를 갱신
-    //     stompClient.subscribe('/pub/occupancy', function(message) {
-    //         let rooms = JSON.parse(message.body);
-    //
-    //         rooms.forEach(function(room) {
-    //             $('#room-' + room.roomId + ' .current-people').text(room.currentPeople);
-    //         });
-    //     });
-    // });
+    });
 });
