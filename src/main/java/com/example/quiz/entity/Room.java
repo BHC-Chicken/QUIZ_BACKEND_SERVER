@@ -1,11 +1,8 @@
 package com.example.quiz.entity;
 
 import java.io.Serializable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,8 +28,8 @@ public class Room implements Serializable {
     private Boolean removeStatus;
     private String masterEmail;
 
-    public void changeRemoveStatus() {
-        this.removeStatus = false;
+    public void removeStatus() {
+        this.removeStatus = true;
     }
 
     public void changeRoomName(String roomName) {

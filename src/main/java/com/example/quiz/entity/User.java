@@ -1,18 +1,15 @@
 package com.example.quiz.entity;
 
 import com.example.quiz.enums.Role;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
-import javax.persistence.*;
 
 @Builder
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+@Getter
 public class User {
 
     @Id
@@ -34,5 +31,12 @@ public class User {
         this.id = userId;
         this.role = userRole;
         this.readyStatus = readyStatus;
+    }
+
+    public void changeUserReadyStatus(boolean readyStatus) {
+        this.readyStatus = readyStatus;
+    }
+    public void changeUserName(String username) {
+        this.username = username;
     }
 }
