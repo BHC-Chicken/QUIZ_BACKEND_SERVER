@@ -27,14 +27,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
-                .csrf().disable()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .formLogin().disable()
-                .authorizeRequests()
-                .antMatchers("/hello").authenticated()
-                .anyRequest().permitAll()
-                .and()
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth ->
+                        auth.requestMatchers("/room/").authenticated()
+                                .anyRequest().permitAll())
                 .addFilterBefore(new JWTRequestFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 /**
                  * LoginFilter가 없어져도 되는 이유 : UsernamePasswordAuthenticationFilter가 안에서 다 해줌
