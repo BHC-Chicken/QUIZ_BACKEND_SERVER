@@ -4,10 +4,11 @@ package com.example.quiz.jwt;
 import com.example.quiz.config.auth.CustomUserDetails;
 import com.example.quiz.entity.User;
 import java.io.IOException;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -44,7 +45,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
         String username = jwtUtil.getUsername(token);
 
         User user = new User();
-        user.setUsername(username);
+        user.changeUserName(username);
 
         CustomUserDetails customUserDetails = new CustomUserDetails(user);
 

@@ -10,8 +10,9 @@ import com.example.quiz.model.OAuthToken;
 import com.example.quiz.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -46,19 +47,16 @@ public class UserService {
         OAuthToken oAuthToken = requestKakaoToken(code);
         KakaoProfile kakaoProfile = requestKakaoProfile(oAuthToken.getAccess_token());
 
-        //로그인 회원가입 단계
-        User kakaoUser = User.builder()
-                .username(kakaoProfile.getKakao_account().getEmail() + "_" + kakaoProfile.getId())
-                .email(kakaoProfile.getKakao_account().getEmail())
-                .build();
+        String username = kakaoProfile.getKakao_account().getEmail() + "_" + kakaoProfile.getId();
+        String email = kakaoProfile.getKakao_account().getEmail();
 
         //가입자 혹은 비가입자 체크 해서 처리
-        userRepository
-                .findByUsername(kakaoUser.getUsername())
-                .orElseGet(() -> signUp(kakaoUser));
+        User user = userRepository
+                .findByUsername(username)
+                .orElseGet(() -> signUp(username, email));
 
-        String accessToken = JWTUtil.generateJWTToken(kakaoUser);
-        String refreshToken = JWTUtil.generateRefreshToken(kakaoUser);
+        String accessToken = JWTUtil.generateJWTToken(user);
+        String refreshToken = JWTUtil.generateRefreshToken(user);
 
         // Cookie 생성
         Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
@@ -127,19 +125,17 @@ public class UserService {
     }
 
     @Transactional
-    public User signUp(User user) {
-        user.setRole(Role.USER);
+    public User signUp(String username, String email) {
+        User user = new User(username, email, Role.USER);
 
         return userRepository.save(user);
     }
 
     @Transactional
     public void userUpdate(User user) {
-        User persistance = userRepository.findById(user.getId()).orElseThrow(() -> {
-            return new IllegalArgumentException("회원 찾기 실패");
-        });
+        User persistance = userRepository.findById(user.getId()).orElseThrow(() -> new IllegalArgumentException("회원 찾기 실패"));
 
-        persistance.setEmail(user.getEmail());
+        persistance.changeEmail(user.getEmail());
 
         //회원 수정 함수 종료 시 = 서비스 종료 = 트랜잭션 종료 = commit이 자동으로 수행
         //영속화된 persistance 객체 변화 감지 시 더티 체킹하여 update문을 날려준다.

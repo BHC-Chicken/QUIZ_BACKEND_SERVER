@@ -27,6 +27,12 @@ public class User {
 
     private boolean readyStatus;
 
+    public User(String username, String email, Role role) {
+        this.username = username;
+        this.email = email;
+        this.role = role;
+    }
+
     public User(Long userId, Role userRole, boolean readyStatus) {
         this.id = userId;
         this.role = userRole;
@@ -36,7 +42,12 @@ public class User {
     public void changeUserReadyStatus(boolean readyStatus) {
         this.readyStatus = readyStatus;
     }
+
     public void changeUserName(String username) {
         this.username = username;
+    }
+
+    public void changeEmail(String email) {
+        this.email = email;
     }
 }
