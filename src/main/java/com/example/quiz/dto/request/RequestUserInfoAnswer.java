@@ -1,18 +1,6 @@
 package com.example.quiz.dto.request;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-
 import java.util.List;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@ToString
-public class RequestUserInfoAnswer {
-    private Long userId;
-    private List<Long> questionList;
-    private Integer quizCount;
+public record RequestUserInfoAnswer(Long userId, List<Long> questionList, Integer quizCount) {
 }
