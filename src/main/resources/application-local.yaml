@@ -3,16 +3,16 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/game
-    username: "${username}"
-    password: "${password}"
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "${spring.datasource.url}"
+    username: "${spring.datasource.username}"
+    password: "${spring.datasource.password}"
+    driver-class-name: "${spring.datasource.driver-class-name}"
   data:
     mongodb:
-      uri: mongodb+srv://rnrmf0721:v7JdddChi1jtnAjR@cluster0.pjpvyou.mongodb.net/nerdInDeveloper
+      uri: "${spring.data.mongodb.uri}"
     redis:
-      host: localhost
-      port: 6379
+      host: "${spring.data.redis.host}"
+      port: "${spring.data.redis.port}"
   jpa:
     open-in-view: false
     hibernate:
@@ -28,14 +28,23 @@ spring:
       client:
         registration:
           kakao:
-            client-id: 80d80a8cdee20163339bb014f820b02c
-            redirect-uri: http://localhost/auth/kakao/callback
-            authorization-grant-type: authorization_code
+            client-id: "${kakao.client-id}"
+            redirect-uri: "${kakao.redirect-uri}"
+            authorization-grant-type: "${kakao.authorization-grant-type}"
         provider:
           kakao:
-            token-uri: https://kauth.kakao.com/oauth/token
-            user-info-uri: https://kapi.kakao.com/v2/user/me
+            token-uri: "${kakao.token-uri}"
+            user-info-uri: "${kakao.user-info-uri}"
   mvc:
     pathmatch:
-      matching-strategy: ant_path_matcher
-  
+      matching-strategy: "${mvc.matching-strategy}"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
