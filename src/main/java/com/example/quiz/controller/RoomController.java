@@ -9,8 +9,6 @@ import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.service.RoomProducerService;
 import com.example.quiz.service.RoomService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -33,7 +31,6 @@ public class RoomController {
         RoomResponse roomResponse = roomProducerService.createRoom(roomRequest);
 
         return "redirect:/room/" + roomResponse.roomId();
-    }
 
     @GetMapping("/room-list")
     public ModelAndView getRoomList(@RequestParam(name = "page") Optional<Integer> page) {
