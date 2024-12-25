@@ -33,10 +33,14 @@ public class Room implements Serializable {
     }
 
     public void changeRoomName(String roomName) {
-        this.roomName = roomName;
+        if (roomName != null) {
+            this.roomName = roomName;
+        }
     }
 
     public void changeSubject(Long topicId) {
-        this.topicId = topicId;
+        if (topicId != null) {
+            this.topicId = topicId;
+        }
     }
 }
