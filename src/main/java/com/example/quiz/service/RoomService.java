@@ -9,10 +9,13 @@ import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.User;
 import com.example.quiz.enums.Role;
+import com.example.quiz.mapper.RoomMapper;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
+
 import java.util.List;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,26 +38,20 @@ public class RoomService {
         Game game = gameRepository.findById(String.valueOf(roomId)).orElseThrow();
 
         if (room.getMaxPeople() <= game.getGameUser().size()) {
-            throw new IllegalArgumentException();
+            throw new IllegalAccessException();
         }
 
         game.getGameUser().add(user);
         gameRepository.save(game);
 
-        return new RoomEnterResponse(room.getRoomId(), room.getRoomName(), room.getTopicId(), room.getMaxPeople(), room.getQuizCount(), room.getRemoveStatus());
+        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room);
     }
 
     @Transactional
-    public RoomModifyResponse modifyRoom(RoomModifyRequest request, long roomId) {
-        Room room = roomRepository.findById(roomId).orElseThrow(IllegalArgumentException::new);
-
-        if (request.roomName() != null) {
-            room.changeRoomName(request.roomName());
-        }
-
-        if (request.topicId() != null) {
-            room.changeSubject(request.topicId());
-        }
+    public RoomModifyResponse modifyRoom(RoomModifyRequest request, long roomId) throws IllegalAccessException {
+        Room room = roomRepository.findById(roomId).orElseThrow(IllegalAccessException::new);
+        room.changeRoomName(request.roomName());
+        room.changeSubject(request.topicId());
 
         return new RoomModifyResponse(room.getRoomName(), room.getTopicId());
     }

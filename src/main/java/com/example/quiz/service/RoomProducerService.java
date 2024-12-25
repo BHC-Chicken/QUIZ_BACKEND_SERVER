@@ -8,6 +8,7 @@ import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.User;
 import com.example.quiz.enums.Role;
+import com.example.quiz.mapper.RoomMapper;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,14 +35,7 @@ public class RoomProducerService {
     private final StompEventListener stompEventListener;
 
     public RoomResponse createRoom(RoomCreateRequest roomRequest) {
-        Room room = Room.builder()
-                .topicId(roomRequest.topicId())
-                .roomName(roomRequest.roomName())
-                .maxPeople(roomRequest.maxPeople())
-                .quizCount(roomRequest.quizCnt())
-                .removeStatus(false)
-                .masterEmail(roomRequest.masterEmail())
-                .build();
+        Room room = RoomMapper.INSTANCE.RoomCreateRequestToRoom(roomRequest);
 
         long roomId = roomRepository.save(room).getRoomId();
 
@@ -55,13 +49,17 @@ public class RoomProducerService {
 
         Room savedRoom = roomRepository.findById(roomId).orElseThrow();
 
-        return new RoomResponse(savedRoom.getRoomId(), savedRoom.getRoomName(), savedRoom.getTopicId(), savedRoom.getMaxPeople(), savedRoom.getQuizCount(), 1);
+        return RoomMapper.INSTANCE.RoomToRoomResponse(savedRoom);
     }
 
     public Page<RoomListResponse> roomList(int index) {
         Pageable pageable = PageRequest.of(index, PAGE_SIZE, Sort.by("roomId").descending());
 
         return roomRepository.findAllByRemoveStatus(false, pageable)
-                .map(room -> new RoomListResponse(room.getRoomId(), room.getRoomName(), room.getTopicId(), room.getMaxPeople(), room.getQuizCount(), stompEventListener.getSubscriptionCount(room.getRoomId()).get()));
+                .map(room -> {
+                    Integer currentPeople = stompEventListener.getSubscriptionCount(room.getRoomId()).get();
+
+                    return RoomMapper.INSTANCE.RoomToRoomListResponse(room, currentPeople);
+                });
     }
 }

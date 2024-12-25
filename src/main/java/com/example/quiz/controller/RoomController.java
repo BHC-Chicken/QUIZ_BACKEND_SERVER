@@ -58,7 +58,7 @@ public class RoomController {
 
     @ResponseBody
     @PatchMapping("/room/{roomId}")
-    public ResponseEntity<RoomModifyResponse> modifyRoom(@PathVariable Long roomId, RoomModifyRequest request) {
+    public ResponseEntity<RoomModifyResponse> modifyRoom(@PathVariable Long roomId, RoomModifyRequest request) throws IllegalAccessException {
         RoomModifyResponse roomModifyResponse = roomService.modifyRoom(request, roomId);
 
         return ResponseEntity.ok(roomModifyResponse);
