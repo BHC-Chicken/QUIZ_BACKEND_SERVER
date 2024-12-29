@@ -1,9 +1,12 @@
 package com.example.quiz.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class OAuthToken {
+    private String id_token;
     private String access_token;
     private String token_type;
     private String refresh_token;

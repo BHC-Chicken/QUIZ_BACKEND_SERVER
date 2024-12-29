@@ -1,31 +1,45 @@
 package com.example.quiz.controller;
 
+import com.example.quiz.model.KakaoProperties;
 import com.example.quiz.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-
-
+import java.net.URI;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class UserController {
-
     private final UserService userService;
+    private final KakaoProperties kakaoProperties;
 
-    @GetMapping("/auth/kakao/callback")
-    public ResponseEntity<String> kakaoCallback(String code, HttpServletResponse response) {
+    @GetMapping("/oauth/kakao")
+    public ResponseEntity<Object> redirectToKakao() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + userService.kakaoCallback(code, response));
 
-        return ResponseEntity.ok().headers(headers).body("로그인 성공");
+        String kakaoAuthUrl = "https://kauth.kakao.com/oauth/authorize" +
+                "?client_id=" + kakaoProperties.getClientId() +
+                "&redirect_uri=" + kakaoProperties.getRedirectUri() +
+                "&response_type=code";
+
+        headers.setLocation(URI.create(kakaoAuthUrl));
+
+        return new ResponseEntity<>(headers, HttpStatus.PERMANENT_REDIRECT);
     }
 
-    /*
-    Redis를 사용하여 Whitelist 방법 고려
-     */
+    @GetMapping("/auth/kakao/callback")
+    public ResponseEntity<String> kakaoCallback(@RequestParam("code") String code, HttpServletResponse response) {
+        userService.kakaoCallback(code, response);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(URI.create("http://localhost/room-list"));
+
+        return new ResponseEntity<>(headers, HttpStatus.FOUND);
+    }
 }

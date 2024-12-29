@@ -5,9 +5,9 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@Component
 @Getter
 @Setter
+@Component
 @ConfigurationProperties(prefix = "spring.security.oauth2.client.provider.kakao")
 public class KakaoToken {
     private String tokenUri;

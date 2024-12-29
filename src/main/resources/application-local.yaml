@@ -48,3 +48,6 @@ management:
     metrics:
       export:
         enabled: true
+
+secret:
+  key: "${secret.key}"

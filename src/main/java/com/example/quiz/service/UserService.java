@@ -2,7 +2,7 @@ package com.example.quiz.service;
 
 import com.example.quiz.entity.User;
 import com.example.quiz.enums.Role;
-import com.example.quiz.jwt.JWTUtil;
+import com.example.quiz.jwt.JwtUtil;
 import com.example.quiz.model.KakaoProfile;
 import com.example.quiz.model.KakaoProperties;
 import com.example.quiz.model.KakaoToken;
@@ -13,68 +13,56 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserService {
 
+    private final JwtUtil jwtUtil;
+    private final KakaoToken kakaoToken;
     private final UserRepository userRepository;
     private final KakaoProperties kakaoProperties;
-    private final KakaoToken kakaoToken;
-
-    public UserService(
-            UserRepository userRepository,
-            KakaoProperties kakaoProperties,
-            KakaoToken kakaoToken) {
-        this.userRepository = userRepository;
-        this.kakaoProperties = kakaoProperties;
-        this.kakaoToken = kakaoToken;
-    }
 
     @Transactional
-    public String kakaoCallback(String code, HttpServletResponse response) {
-        //카카오로부터 유저 정보 받아오기
+    public void kakaoCallback(String code, HttpServletResponse response) {
         OAuthToken oAuthToken = requestKakaoToken(code);
         KakaoProfile kakaoProfile = requestKakaoProfile(oAuthToken.getAccess_token());
 
         String username = kakaoProfile.getKakao_account().getEmail() + "_" + kakaoProfile.getId();
         String email = kakaoProfile.getKakao_account().getEmail();
 
-        //가입자 혹은 비가입자 체크 해서 처리
-        User user = userRepository
-                .findByUsername(username)
-                .orElseGet(() -> signUp(username, email));
+        User user = findUser(username, email);
 
-        String accessToken = JWTUtil.generateJWTToken(user);
-        String refreshToken = JWTUtil.generateRefreshToken(user);
+        String accessToken = jwtUtil.generateToken(user.getId(), user.getEmail());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
-        // Cookie 생성
-        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
-        refreshTokenCookie.setMaxAge(1000000); // 만료 시간 설정 (초 단위)
-        refreshTokenCookie.setPath("/"); // 모든 경로에서 접근 가능하도록 설정
-        // HTTP 응답에 Cookie 추가
-        response.addCookie(refreshTokenCookie);
+        String encodeToken = URLEncoder.encode("Bearer " + accessToken, StandardCharsets.UTF_8);
 
-        return accessToken;
-        /*
-        accessToken은 Header, refreshToken은 Cookie
-         */
+        makeCookie(encodeToken, response);
+    }
+
+    @Transactional
+    public void userUpdate(User user) {
+        User persistence = userRepository.findById(user.getId()).orElseThrow(() -> new IllegalArgumentException("회원 찾기 실패"));
+
+        persistence.changeEmail(user.getEmail());
     }
 
     private OAuthToken requestKakaoToken(String code) {
-        RestTemplate rt = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+        httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("grant_type", kakaoProperties.getAuthorizationGrantType());
@@ -82,62 +70,60 @@ public class UserService {
         params.add("redirect_uri", kakaoProperties.getRedirectUri());
         params.add("code", code);
 
-        HttpEntity<MultiValueMap<String, String>> kakaoTokenRequest =
-                new HttpEntity<>(params, httpHeaders);
-
-        ResponseEntity<String> response = rt.exchange(
+        return sendHttpRequest(
                 kakaoToken.getTokenUri(),
                 HttpMethod.POST,
-                kakaoTokenRequest,
-                String.class
+                httpHeaders,
+                params,
+                OAuthToken.class
         );
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return objectMapper.readValue(response.getBody(), OAuthToken.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private KakaoProfile requestKakaoProfile(String accessToken) {
-        RestTemplate rt = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         httpHeaders.add("Authorization", "Bearer " + accessToken);
-        httpHeaders.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 
-        HttpEntity<MultiValueMap<String, String>> kakaoProfileRequest =
-                new HttpEntity<>(httpHeaders);
-
-        ResponseEntity<String> response2 = rt.exchange(
+        return sendHttpRequest(
                 kakaoToken.getUserInfoUri(),
                 HttpMethod.POST,
-                kakaoProfileRequest,
+                httpHeaders,
+                null,
+                KakaoProfile.class
+        );
+    }
+
+    private <T> T sendHttpRequest(String url, HttpMethod method, HttpHeaders headers, MultiValueMap<String, String> params, Class<T> responseType) {
+        RestTemplate rt = new RestTemplate();
+        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(params, headers);
+
+        ResponseEntity<String> response = rt.exchange(
+                url,
+                method,
+                requestEntity,
                 String.class
         );
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            return objectMapper.readValue(response2.getBody(), KakaoProfile.class);
+            return objectMapper.readValue(response.getBody(), responseType);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to parse response: " + e.getMessage(), e);
         }
     }
 
-    @Transactional
-    public User signUp(String username, String email) {
-        User user = new User(username, email, Role.USER);
+    private void makeCookie(String token, HttpServletResponse response) {
+        Cookie cookie = new Cookie("accessToken", token);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(60 * 60);
 
-        return userRepository.save(user);
+        response.addCookie(cookie);
     }
 
-    @Transactional
-    public void userUpdate(User user) {
-        User persistance = userRepository.findById(user.getId()).orElseThrow(() -> new IllegalArgumentException("회원 찾기 실패"));
-
-        persistance.changeEmail(user.getEmail());
-
-        //회원 수정 함수 종료 시 = 서비스 종료 = 트랜잭션 종료 = commit이 자동으로 수행
-        //영속화된 persistance 객체 변화 감지 시 더티 체킹하여 update문을 날려준다.
+    private User findUser(String username, String email) {
+        return userRepository
+                .findByUsername(username)
+                .orElseGet(() -> userRepository.save(new User(username, email, Role.USER)));
     }
 }

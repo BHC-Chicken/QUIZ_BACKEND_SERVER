@@ -1,8 +1,8 @@
 package com.example.quiz.entity;
 
+import com.example.quiz.vo.InGameUser;
 import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -11,11 +11,10 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Set;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Document(collation = "game")
-@Builder
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collation = "game")
 public class Game {
     @Id
     @Column(nullable = false)
@@ -23,7 +22,7 @@ public class Game {
     private Integer currentParticipantsNo;
     private Boolean isGaming;
     @Field("gameUser")
-    private Set<User> gameUser;
+    private Set<InGameUser> gameUser;
 
     public void changeGameStatus(boolean status) {
         this.isGaming = status;

@@ -1,20 +1,24 @@
 package com.example.quiz.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Setter
+@Getter
 public class KakaoProfile {
     public Long id;
     public String connected_at;
     public Properties properties;
     public KakaoAccount kakao_account;
 
-    @Data
+    @Getter
+    @Setter
     public class Properties {
         public String nickname;
     }
 
-    @Data
+    @Getter
+    @Setter
     public class KakaoAccount {
         public Boolean profile_nickname_needs_agreement;
         public Profile profile;
@@ -24,7 +28,8 @@ public class KakaoProfile {
         public Boolean is_email_verified;
         public String email;
 
-        @Data
+        @Getter
+        @Setter
         public class Profile {
             public String nickname;
             public Boolean is_default_nickname;

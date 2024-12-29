@@ -13,18 +13,13 @@ import org.mapstruct.factory.Mappers;
 public interface RoomMapper {
     RoomMapper INSTANCE = Mappers.getMapper(RoomMapper.class);
 
-    @Mapping(target = "removeStatus", source = "removeStatus")
-    @Mapping(target = "quizCount", source = "quizCnt")
-    Room RoomCreateRequestToRoom(RoomCreateRequest request);
+    @Mapping(target = "removeStatus", constant = "false")
+    Room RoomCreateRequestToRoom(RoomCreateRequest request, String masterEmail);
 
     @Mapping(target = "currentPeople", constant = "1")
-    @Mapping(target = "quizCnt", source = "quizCount")
     RoomResponse RoomToRoomResponse(Room room);
 
     RoomListResponse RoomToRoomListResponse(Room room, Integer currentPeople);
 
-    @Mapping(source = "quizCount", target = "quizCnt")
     RoomEnterResponse RoomToRoomEnterResponse(Room room);
-
-
 }

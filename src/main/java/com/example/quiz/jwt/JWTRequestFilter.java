@@ -1,56 +1,62 @@
 package com.example.quiz.jwt;
 
 
-import com.example.quiz.config.auth.CustomUserDetails;
-import com.example.quiz.entity.User;
-import java.io.IOException;
-
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.example.quiz.dto.User.LoginUserRequest;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.WebUtils;
 
-/*
-Filter부분을 고도화 : try-catch 문으로 감싸고 catch로 예외를 handling
-finally 구문을 통한 SecurityContext 초기화
-- Thread Pool을 이용하기에, 인증 안된 사용자가 아무것도 없이 접근한 경우 다른 사람의 인증 정보를 사용할 수 있기에 사용한다.
- */
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
+@Slf4j
 @RequiredArgsConstructor
 public class JWTRequestFilter extends OncePerRequestFilter {
-    private final JWTUtil jwtUtil;
+    private final JwtUtil jwtUtil;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String authorization = request.getHeader("Authorization");
-
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        if (request.getCookies() == null) {
             filterChain.doFilter(request, response);
 
             return;
         }
 
-        String token = authorization.split(" ")[1];
+        Cookie cookie = WebUtils.getCookie(request, "accessToken");
 
-        if (jwtUtil.isExpired(token)) {
+        if (cookie == null) {
             filterChain.doFilter(request, response);
 
             return;
         }
 
-        String username = jwtUtil.getUsername(token);
+        try {
+            String token = URLDecoder.decode(cookie.getValue(), StandardCharsets.UTF_8).split(" ")[1];
+            LoginUserRequest loginUserRequest = jwtUtil.verifyToken(token);
 
-        User user = new User();
-        user.changeUserName(username);
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(
+                            loginUserRequest, null, null
+                    );
 
-        CustomUserDetails customUserDetails = new CustomUserDetails(user);
+            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        } catch (JWTVerificationException e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-        Authentication authToken = new UsernamePasswordAuthenticationToken(customUserDetails.getUsername(), customUserDetails.getPassword(), customUserDetails.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authToken);
+            return;
+        }
 
         filterChain.doFilter(request, response);
     }
