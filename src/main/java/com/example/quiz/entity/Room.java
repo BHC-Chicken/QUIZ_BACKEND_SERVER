@@ -1,20 +1,15 @@
 package com.example.quiz.entity;
 
-import java.io.Serializable;
-
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
+@Entity
 @Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Builder
-public class Room implements Serializable {
+public class Room {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
