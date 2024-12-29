@@ -1,5 +1,7 @@
 package com.example.quiz.controller;
 
+import com.example.quiz.config.auth.annotation.user.LoginUser;
+import com.example.quiz.dto.User.LoginUserRequest;
 import com.example.quiz.dto.room.request.RoomCreateRequest;
 import com.example.quiz.dto.room.request.RoomModifyRequest;
 import com.example.quiz.dto.room.response.RoomEnterResponse;
@@ -27,8 +29,8 @@ public class RoomController {
     private final RoomProducerService roomProducerService;
 
     @PostMapping(value = "/room")
-    public String createRoom(RoomCreateRequest roomRequest) {
-        RoomResponse roomResponse = roomProducerService.createRoom(roomRequest);
+    public String createRoom(RoomCreateRequest roomRequest, @LoginUser LoginUserRequest loginUserRequest) throws IllegalAccessException {
+        RoomResponse roomResponse = roomProducerService.createRoom(roomRequest, loginUserRequest);
 
         return "redirect:/room/" + roomResponse.roomId();
     }
@@ -48,8 +50,8 @@ public class RoomController {
     }
 
     @GetMapping("/room/{roomId}")
-    public ModelAndView enterRoom(@PathVariable Long roomId) throws IllegalAccessException {
-        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId);
+    public ModelAndView enterRoom(@PathVariable Long roomId, @LoginUser LoginUserRequest loginUserRequest) throws IllegalAccessException {
+        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest);
         Map<String, Object> map = new HashMap<>();
         map.put("roomInfo", roomEnterResponse);
 
