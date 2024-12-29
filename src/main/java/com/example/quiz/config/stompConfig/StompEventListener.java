@@ -2,6 +2,7 @@ package com.example.quiz.config.stompConfig;
 
 import com.example.quiz.dto.response.CurrentOccupancy;
 import com.example.quiz.dto.room.ChangeCurrentOccupancies;
+import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.entity.Room;
 import com.example.quiz.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +45,8 @@ public class StompEventListener {
             }
 
             long roomId = getRoomId(destination);
-
-            int currentCount = roomSubscriptionCount.get(roomId).updateAndGet(current -> {
+            AtomicInteger subscriptionCount = roomSubscriptionCount.computeIfAbsent(roomId, id -> new AtomicInteger(0));
+            int currentCount = subscriptionCount.updateAndGet(current -> {
                 if (current >= 8) {
                     throw new RuntimeException("Room capacity reached : " + roomId);
                 }
@@ -84,6 +85,12 @@ public class StompEventListener {
                 room.ifPresent(Room::removeStatus);
             }
         }
+    }
+
+    @EventListener
+    public void createNewRoomEvent(RoomResponse response) {
+
+        messagingTemplate.convertAndSend("/pub/occupancy", response);
     }
 
     private String extractDestinationFromEvent(StompHeaderAccessor accessor) {
