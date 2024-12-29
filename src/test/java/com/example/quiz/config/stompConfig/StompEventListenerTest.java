@@ -54,6 +54,9 @@ class StompEventListenerTest {
                 roomSubscriptionCount,
                 publisher
         );
+
+        sessionDestinationMap.clear();
+        roomSubscriptionCount.clear();
     }
 
     @Test
