@@ -27,11 +27,10 @@
     <script defer src="/script/room.js"></script>
 </head>
 <body>
-<div th:if="${roomList == null or roomList.empty}">
-    <p>현재 생성된 방이 없습니다</p>
-</div>
+
 <button id="roomCreate" type="button" data-toggle="modal" data-target="#roomCreateModal">방 만들기</button>
-<div th:unless="${roomList == null or roomList.empty}">
+
+<div>
     <div id="roomsContainer" th:data-rooms="${roomIds}">
         <table id="room-table">
             <thead>
@@ -46,6 +45,11 @@
             </tr>
             </thead>
             <tbody id="room-table-body">
+            <!-- roomList가 비었을 경우 -->
+            <tr id="empty-message" th:if="${roomList == null or roomList.empty}">
+                <td colspan="7" style="text-align: center;">현재 생성된 방이 없습니다.</td>
+            </tr>
+            <!-- roomList에 데이터가 있을 경우 -->
             <tr th:each="room : ${roomList.content}" th:id="'room-' + ${room.roomId}">
                 <td th:text="${room.roomId}"></td>
                 <td th:text="${room.roomName}"></td>
