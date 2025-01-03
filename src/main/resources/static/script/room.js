@@ -1,28 +1,3 @@
-document.querySelectorAll('a').forEach(anchor =>
-    anchor.addEventListener('click', (event) => {
-        let roomId = event.target.dataset.roomid;
-        event.preventDefault();
-
-        fetch(`/room/${roomId}`)
-            .then(response => {
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                window.location.href = `/room/${roomId}`;
-            })
-            .catch(error => {
-                if (error.message.includes('403')) {
-                    alert('권한이 없습니다.');
-                } else if (error.message.includes('401')) {
-                    alert('중복 입장은 불가능합니다.')
-                } else {
-                    alert('알 수 없는 오류가 발생했습니다.');
-                }
-            });
-    })
-);
-
 window.addEventListener("load", function () {
     let roomsContainer = document.getElementById('roomsContainer');
 
@@ -34,17 +9,33 @@ window.addEventListener("load", function () {
 
         stompClient.subscribe('/pub/occupancy', function (message) {
             let room = JSON.parse(message.body);
+            let emptyMessageRow = document.getElementById("empty-message");
 
             if (room.currentPeople == 0) {
                 let roomRow = document.getElementById('room-' + room.roomId);
                 if (roomRow) {
                     roomRow.remove();
+
+                    let tableBody = document.getElementById('room-table-body');
+
+                    if (tableBody.children.length === 0 && !emptyMessageRow) {
+                        let newEmptyMessageRow = document.createElement('tr');
+                        newEmptyMessageRow.id = 'empty-message';
+                        newEmptyMessageRow.innerHTML = `
+                            <td colspan="7" style="text-align: center;">현재 생성된 방이 없습니다.</td>
+                        `;
+                        tableBody.appendChild(newEmptyMessageRow);
+                    }
                 }
             } else {
                 let roomRow = document.getElementById('room-' + room.roomId);
                 if (!roomRow) {
-                    // 방이 없는 경우 새로 추가
                     let tableBody = document.getElementById('room-table-body');
+
+                    if (emptyMessageRow) {
+                        emptyMessageRow.remove();
+                    }
+
                     roomRow = document.createElement('tr');
                     roomRow.id = 'room-' + room.roomId;
                     roomRow.innerHTML = `

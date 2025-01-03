@@ -10,7 +10,6 @@ import com.example.quiz.model.OAuthToken;
 import com.example.quiz.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -121,7 +120,7 @@ public class UserService {
         response.addCookie(cookie);
     }
 
-    private User findUser(String username, String email) {
+    public User findUser(String username, String email) {
         return userRepository
                 .findByUsername(username)
                 .orElseGet(() -> userRepository.save(new User(username, email, Role.USER)));

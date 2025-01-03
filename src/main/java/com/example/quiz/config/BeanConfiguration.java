@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BeanConfiguration {
 
     @Bean
-    public HashMap<String, String> sessionDestinationMap() {
+    public HashMap<Long, Long> alreadyInGameUser() {
 
         return new HashMap<>();
     }
