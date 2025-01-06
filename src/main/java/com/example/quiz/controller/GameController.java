@@ -26,8 +26,8 @@ public class GameController {
 
     @MessageMapping("/{id}")
     public void enter(@DestinationVariable String id, RequestUserId requestUserId){
-        log.info("문제 출제");
-        ResponseMessage responseMessage = gameService.gameStatusService(id, requestUserId.userId());
+        System.out.println(requestUserId.userId());
+        ResponseMessage responseMessage = gameService.toggleReadyStatus(id, requestUserId.userId());
 
         messagingTemplate.convertAndSend("/pub/"+id,responseMessage);
     }
@@ -43,8 +43,8 @@ public class GameController {
     @MessageMapping("/{id}/check")
     public void checkQuize(@DestinationVariable String id, RequestAnswer requestAnswer){
         log.info("응답");
-        ResponseMessage responseMessage = gameService.checkAnswer(id, requestAnswer);
+        ResponseQuiz responseQuiz = gameService.checkAnswer(id, requestAnswer);
 
-        messagingTemplate.convertAndSend("/pub/"+id+"/check",responseMessage);
+        messagingTemplate.convertAndSend("/pub/"+id+"/check",responseQuiz);
     }
 }
