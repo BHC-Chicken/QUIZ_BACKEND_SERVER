@@ -1,7 +1,6 @@
 package com.example.quiz.config.stompConfig;
 
 import com.example.quiz.dto.User.LoginUserRequest;
-import com.example.quiz.dto.response.CurrentOccupancy;
 import com.example.quiz.dto.room.ChangeCurrentOccupancies;
 import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.entity.Game;
@@ -12,7 +11,6 @@ import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import com.example.quiz.repository.UserRepository;
 import com.example.quiz.vo.InGameUser;
-import com.mongodb.internal.VisibleForTesting;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -23,7 +21,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -37,8 +39,14 @@ public class StompEventListener {
     private final SimpMessagingTemplate messagingTemplate;
     private final StompHeaderAccessorWrapper headerAccessorService;
 
+    private final int BATCH_SIZE = 10;
+
+    private ScheduledFuture<?> scheduledFuture;
     private final Map<Long, Long> alreadyInGameUser;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
+    private final AtomicBoolean isProcessing = new AtomicBoolean(false);
+    private final BlockingQueue<ChangeCurrentOccupancies> blockingQueue = new LinkedBlockingQueue<>(BATCH_SIZE);
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
     @EventListener
     @Transactional
@@ -57,8 +65,34 @@ public class StompEventListener {
     }
 
     @EventListener
-    public void broadcastCurrentOccupancy(ChangeCurrentOccupancies roomInfo) {
-        messagingTemplate.convertAndSend("/pub/occupancy", new CurrentOccupancy(roomInfo.roomId(), roomInfo.currentPeople()));
+    public void broadcastCurrentOccupancy(ChangeCurrentOccupancies roomInfo) throws InterruptedException {
+        blockingQueue.put(roomInfo);
+        processQueueIfNeeded();
+    }
+
+    private void processQueueIfNeeded() {
+        if (isProcessing.compareAndSet(false, true)) {
+            scheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
+                try {
+                    broadcastOccupancy();
+
+                    if (blockingQueue.isEmpty()) {
+                        scheduledFuture.cancel(false);
+                        scheduledFuture = null;
+                        isProcessing.set(false);
+                    }
+                } catch (Exception e) {
+                    log.error("Error during occupancy broadcasting", e);
+                }
+            }, 1, 1, TimeUnit.SECONDS);
+        }
+    }
+
+    private void broadcastOccupancy() {
+        List<ChangeCurrentOccupancies> batch = new ArrayList<>();
+        blockingQueue.drainTo(batch);
+
+        messagingTemplate.convertAndSend("/pub/occupancy", batch);
     }
 
     private LoginUserRequest extractLoginUser(SessionUnsubscribeEvent event) throws IllegalAccessException {
