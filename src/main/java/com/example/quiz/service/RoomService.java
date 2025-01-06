@@ -64,7 +64,11 @@ public class RoomService {
 
     private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
-
+        Room room = findRoomById(roomId);
+        // MasterEmail 비교해서 Admin 구분
+        if(loginUserRequest.email().equals(room.getMasterEmail())) {
+            return new InGameUser(roomId, user.getId(), user.getEmail(), Role.ADMIN, false);
+        }
         return new InGameUser(roomId, user.getId(), user.getEmail(), Role.USER, false);
     }
 
