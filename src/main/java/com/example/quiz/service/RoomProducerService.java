@@ -60,7 +60,7 @@ public class RoomProducerService {
     private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
 
-        return new InGameUser(roomId, user.getId(), user.getEmail(), Role.ADMIN, false);
+        return new InGameUser(user.getId(), roomId, user.getEmail(), Role.ADMIN, false);
     }
 
     private List<RoomListResponse> getRoomList(Pageable pageable) {
