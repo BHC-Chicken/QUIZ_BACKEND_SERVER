@@ -20,7 +20,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -39,18 +42,26 @@ public class RoomService {
         validateLoginUser(loginUserRequest);
         checkAlreadyInGameUser(loginUserRequest.userId());
 
+        Boolean isAdmin = false;
         Room room = findRoomById(roomId);
         int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
 
         Game game = findGameByRoomId(roomId);
         InGameUser inGameUser = findUser(roomId, loginUserRequest);
 
+        Set<InGameUser> inGameUserSet = game.getGameUser();
+        isAdmin = isAdmin(inGameUser);
+
         if (isUserAlreadyInGame(game, inGameUser)) {
-            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room);
+            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
         }
 
         addUserToGame(game, inGameUser, roomId, currentCount);
-        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room);
+        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
+    }
+
+    private boolean isAdmin(InGameUser inGameUser) {
+        return inGameUser.getRole() == Role.ADMIN;
     }
 
     @Transactional
