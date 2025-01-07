@@ -20,8 +20,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,6 +40,9 @@ public class RoomService {
         validateLoginUser(loginUserRequest);
         checkAlreadyInGameUser(loginUserRequest.userId());
 
+        log.info("User Id: {}", loginUserRequest.userId());
+        log.info("Room Id: {}", roomId);
+
         Boolean isAdmin = false;
         Room room = findRoomById(roomId);
         int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
@@ -53,9 +54,15 @@ public class RoomService {
         isAdmin = isAdmin(inGameUser);
 
         if (isUserAlreadyInGame(game, inGameUser)) {
+            //addUserToGame(game, inGameUser, roomId, currentCount);
+            System.out.println(inGameUser.getId());
+            inGameUserSet.add(inGameUser);
+            for(InGameUser inGameUser2 : inGameUserSet) {
+                System.out.println(inGameUser2.getId());
+            }
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
         }
-
+        inGameUserSet.add(inGameUser);
         addUserToGame(game, inGameUser, roomId, currentCount);
         return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
     }
@@ -78,9 +85,9 @@ public class RoomService {
         Room room = findRoomById(roomId);
         // MasterEmail 비교해서 Admin 구분
         if(loginUserRequest.email().equals(room.getMasterEmail())) {
-            return new InGameUser(roomId, user.getId(), user.getEmail(), Role.ADMIN, false);
+            return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.ADMIN, false);
         }
-        return new InGameUser(roomId, user.getId(), user.getEmail(), Role.USER, false);
+        return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false);
     }
 
     private int incrementSubscriptionCount(long roomId, Long userId) {
