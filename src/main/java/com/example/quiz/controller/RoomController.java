@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class RoomController {
     private final RoomService roomService;
     private final RoomProducerService roomProducerService;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
     @PostMapping(value = "/room")
     public String createRoom(RoomCreateRequest roomRequest, @LoginUser LoginUserRequest loginUserRequest) throws IllegalAccessException {
@@ -58,6 +60,8 @@ public class RoomController {
         RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest);
         Map<String, Object> map = new HashMap<>();
         map.put("roomInfo", roomEnterResponse);
+        // 참가자 입장 메시지 브로드캐스트
+        simpMessagingTemplate.convertAndSend("/pub/room/" + roomId + "/participants", roomEnterResponse.participants());
 
         return new ModelAndView("room", map);
     }

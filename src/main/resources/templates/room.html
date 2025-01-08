@@ -65,6 +65,10 @@
 <p><strong>Max People: </strong><span th:text="${roomInfo.maxPeople}"></span></p>
 <p><strong>Quiz Count: </strong><span th:text="${roomInfo.quizCount}"></span></p>
 
+<!-- 숨겨진 요소에 roomId 및 isAdmin 저장 -->
+<div id="roomId" th:text="${roomInfo.roomId}" style="display:none;"></div>
+<div id="isAdmin" th:text="${roomInfo.isAdmin}" style="display:none;"></div>
+
 <h2>Users in Room</h2>
 <table id="userTable">
     <thead>
@@ -89,7 +93,7 @@
                 Start Game
             </button>
             <!-- User 참가자에게만 "Toggle Ready" 버튼 표시 -->
-            <button th:if="${participant.role == T(com.example.quiz.enums.Role).USER}"
+            <button th:if="${!roomInfo.isAdmin and participant.role == T(com.example.quiz.enums.Role).USER}"
                     th:attr="data-user-id=${participant.id}"
                     class="ready-btn">
                 Toggle Ready
@@ -106,6 +110,12 @@
         th:text="'ID: ' + ${participant.id} + ', Name: ' + ${participant.username} + ', Ready: ' + (${participant.readyStatus} ? 'Yes' : 'No') + ', Role: ' + (${participant.role == T(com.example.quiz.enums.Role).ADMIN ? 'ADMIN' : 'USER'})">
     </li>
 </ul>
+
+<script>
+    // 클라이언트 측에서 isAdmin을 읽어 변수로 설정
+    const isAdminElement = document.getElementById('isAdmin');
+    const isAdmin = isAdminElement.textContent.trim() === 'true';
+</script>
 
 </body>
 </html>

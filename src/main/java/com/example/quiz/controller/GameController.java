@@ -23,12 +23,18 @@ public class GameController {
     private final SimpMessagingTemplate messagingTemplate;
     private final GameService gameService;
 
-    @MessageMapping("/{id}")
+    @MessageMapping("/{id}/ready")
     public void ready(@DestinationVariable String id, RequestUserId requestUserId) {
-        log.info("userID is {}", requestUserId.userId());
+        log.info("user ID is {}", requestUserId.userId());
         ResponseMessage responseMessage = gameService.toggleReadyStatus(id, requestUserId.userId());
-        log.info("role : {}, userId : {}, readyStatus : {}, email : {}" , responseMessage.role(), responseMessage.userId(), responseMessage.readyStatus(), responseMessage.email());
-        messagingTemplate.convertAndSend("/pub/"+id,responseMessage);
+        log.info("id : {} role : {}, userId : {}, readyStatus : {}, email : {}" ,
+                id,
+                responseMessage.role(),
+                responseMessage.userId(),
+                responseMessage.readyStatus(),
+                responseMessage.email()
+        );
+        messagingTemplate.convertAndSend("/pub/room/"+id, responseMessage);
     }
 
     @MessageMapping("/{id}/send")
