@@ -27,7 +27,7 @@ public class GameController {
     public void ready(@DestinationVariable String id, RequestUserId requestUserId) {
         log.info("userID is {}", requestUserId.userId());
         ResponseMessage responseMessage = gameService.toggleReadyStatus(id, requestUserId.userId());
-        log.info("role : {}, userId : {}, readyStatus : {}, email : {}" , responseMessage.role(), responseMessage.userId(), responseMessage.allReadyStatus(), responseMessage.email());
+        log.info("role : {}, userId : {}, readyStatus : {}, email : {}" , responseMessage.role(), responseMessage.userId(), responseMessage.readyStatus(), responseMessage.email());
         messagingTemplate.convertAndSend("/pub/"+id,responseMessage);
     }
 
