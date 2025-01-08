@@ -27,4 +27,5 @@ public class Game {
     public void changeGameStatus(boolean status) {
         this.isGaming = status;
     }
+    public void changeCurrentParticipantsNo(Integer currentParticipantsNo) { this.currentParticipantsNo = currentParticipantsNo; }
 }
