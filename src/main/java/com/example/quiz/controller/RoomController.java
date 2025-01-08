@@ -58,7 +58,7 @@ public class RoomController {
         RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest);
         Map<String, Object> map = new HashMap<>();
         map.put("roomInfo", roomEnterResponse);
-        
+
         return new ModelAndView("room", map);
     }
 
