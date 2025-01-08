@@ -1,9 +1,11 @@
 package com.example.quiz.vo;
 
 import com.example.quiz.enums.Role;
+import lombok.Getter;
 
 import java.util.Objects;
 
+@Getter
 public class InGameUser {
     private final Long roomId;
     private final Long id;

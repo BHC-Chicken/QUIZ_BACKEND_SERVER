@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -39,18 +40,34 @@ public class RoomService {
         validateLoginUser(loginUserRequest);
         checkAlreadyInGameUser(loginUserRequest.userId());
 
+        log.info("User Id: {}", loginUserRequest.userId());
+        log.info("Room Id: {}", roomId);
+
+        Boolean isAdmin = false;
         Room room = findRoomById(roomId);
         int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
 
         Game game = findGameByRoomId(roomId);
         InGameUser inGameUser = findUser(roomId, loginUserRequest);
 
-        if (isUserAlreadyInGame(game, inGameUser)) {
-            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room);
+        Set<InGameUser> inGameUserSet = game.getGameUser();
+        for(InGameUser inGameUser1 : inGameUserSet) {
+            log.info("User: {}", inGameUser1.getId());
         }
+        isAdmin = isAdmin(inGameUser);
 
+        if (isUserAlreadyInGame(game, inGameUser)) {
+            //addUserToGame(game, inGameUser, roomId, currentCount);
+            //inGameUserSet.add(inGameUser);
+            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
+        }
+        //inGameUserSet.add(inGameUser);
         addUserToGame(game, inGameUser, roomId, currentCount);
-        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room);
+        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
+    }
+
+    private boolean isAdmin(InGameUser inGameUser) {
+        return inGameUser.getRole() == Role.ADMIN;
     }
 
     @Transactional
@@ -64,8 +81,12 @@ public class RoomService {
 
     private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
-
-        return new InGameUser(roomId, user.getId(), user.getEmail(), Role.USER, false);
+        Room room = findRoomById(roomId);
+        // MasterEmail 비교해서 Admin 구분
+        if(loginUserRequest.email().equals(room.getMasterEmail())) {
+            return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.ADMIN, false);
+        }
+        return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false);
     }
 
     private int incrementSubscriptionCount(long roomId, Long userId) {
@@ -114,10 +135,12 @@ public class RoomService {
     }
 
     private void addUserToGame(Game game, InGameUser inGameUser, long roomId, int currentCount) {
+        // 실제 유저 추가 && 참가자수 갱신
         game.getGameUser().add(inGameUser);
+        game.changeCurrentParticipantsNo(game.getGameUser().size());
         gameRepository.save(game);
 
         publisher.publishEvent(new ChangeCurrentOccupancies(roomId, currentCount));
-        log.info("roomId: {}", currentCount);
+        //log.info("roomId: {}", currentCount);
     }
 }

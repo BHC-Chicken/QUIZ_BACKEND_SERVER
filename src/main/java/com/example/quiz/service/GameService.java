@@ -13,6 +13,7 @@ import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.QuizRepository;
 import com.example.quiz.repository.RoomRepository;
 import com.example.quiz.repository.UserRepository;
+import com.example.quiz.vo.InGameUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -32,37 +34,74 @@ public class GameService {
     private final UserRepository userRepository;
 
     @Transactional
-    public ResponseMessage gameStatusService(String roomId, Long userId) {
-        // 개발자의 역활에 따른 로직을 나누어야 한다.
-        // 유저의 역할이 admin이면 방에 들어온 유저의 수와 게임에 status가 true인 사람의 갯수 -1를 비교하여
-        // 똑같으면 게임의 상태를 true로 변경하고 admin의 status 도 변경한다.
+    public ResponseMessage toggleReadyStatus(String roomId, Long userId) {
+        // User, Game 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Game game = gameRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Game not found"));
 
-        Game game = gameRepository.findById(roomId).orElseThrow(IllegalAccessError::new);
-        // 게임 데이터에서 유저들의 데이터만 받아오는 코드
-        User findUser = userRepository.findById(userId).orElseThrow();
+        // 현재 로그인한 InGameUser 반환
+        Set<InGameUser> inGameUserSet = game.getGameUser();
+        // TODO Optional 반환값으로 변환
+        InGameUser currentUser = findUser(inGameUserSet, userId);
 
-        // requestUserInfo 에서 userid를 가지고 와서 user 정보를 찾음
+        // 준비상태 토글
+        toggle(game, currentUser);
 
-        // 해당 유저의 역할이 유저일 경우
-        if (findUser.getRole().equals(Role.USER)) {
-            // 유저의 정보를 수정함
-            findUser.changeUserReadyStatus(!findUser.isReadyStatus());
-
-            return new ResponseMessage(userId, findUser.isReadyStatus());
-            // 해당 유저의 역할이 방장일 경우
+        // 역할에 따라서 로직 분기
+        if (isNormalUser(currentUser)) {
+            return handleUserReadyStatus(user, currentUser, inGameUserSet);
         } else {
-            long count = game.getGameUser().stream().filter(User::isReadyStatus).count();
-
-            if (count == game.getCurrentParticipantsNo() - 1) {
-                findUser.changeUserReadyStatus(!findUser.isReadyStatus());
-                // 유저의 정보를 수정함
-                game.changeGameStatus(true);
-
-                return new ResponseMessage(userId, true);
-            }
-
-            return new ResponseMessage(userId, false);
+            return handleAdminReadyStatus(user, currentUser, inGameUserSet);
         }
+    }
+
+    private InGameUser findUser(Set<InGameUser> inGameUserSet, long userId) {
+        for(InGameUser inGameUser : inGameUserSet) {
+            if(inGameUser.getId() == userId) {
+                return inGameUser;
+            }
+        }
+        return null;
+    }
+
+    private void toggle(Game game, InGameUser inGameUser) {
+        // 준비상태 변화 및 게임방 최신화
+        inGameUser.changeReadyStatus(!inGameUser.isReadyStatus());
+        game.getGameUser().add(inGameUser);
+        gameRepository.save(game);
+    }
+
+    private boolean isNormalUser(InGameUser inGameUser) {
+        return inGameUser.getRole().equals(Role.USER);
+    }
+
+    private ResponseMessage handleUserReadyStatus(User user, InGameUser inGameUser, Set<InGameUser> inGameUserSet) {
+        if(isAllReady(inGameUserSet)) {
+            return new ResponseMessage(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), true);
+        }
+        else {
+            return new ResponseMessage(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), false);
+        }
+    }
+
+    private ResponseMessage handleAdminReadyStatus(User user, InGameUser inGameUser, Set<InGameUser> inGameUserSet) {
+        if(isAllReady(inGameUserSet)) {
+            return new ResponseMessage(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), true);
+        }
+        else {
+            return new ResponseMessage(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), false);
+        }
+    }
+
+    private boolean isAllReady(Set<InGameUser> inGameUserSet) {
+        for(InGameUser inGameUser : inGameUserSet) {
+            if(!inGameUser.isReadyStatus()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Transactional
@@ -85,7 +124,7 @@ public class GameService {
             int pickNumber = random.nextInt(size);
             Quiz quiz = allByTopicId.get(pickNumber);
             questionList.add(quiz.getId());
-            return new ResponseQuiz(quiz.getId(), quiz.getQuestion());
+            return new ResponseQuiz(quiz.getId(), false);
         } else {
             while (true) {
                 int pickNumber = random.nextInt(size);
@@ -94,16 +133,16 @@ public class GameService {
                 if (!questionList.contains(quiz.getId())) {
                     questionList.add(quiz.getId());
 
-                    return new ResponseQuiz(quiz.getId(), quiz.getQuestion());
+                    return new ResponseQuiz(quiz.getId(), false);
                 }
             }
         }
     }
-
-    public ResponseMessage checkAnswer(String id, RequestAnswer requestAnswer) {
+    // TODO ResponseQuiz 수정
+    public ResponseQuiz checkAnswer(String id, RequestAnswer requestAnswer) {
 
         Quiz quiz = quizRepository.findById(requestAnswer.quizId()).get();
 
-        return new ResponseMessage(requestAnswer.userId(), quiz.getAnswer().equals(requestAnswer.answer()));
+        return new ResponseQuiz(requestAnswer.userId(), quiz.getAnswer().equals(requestAnswer.answer()));
     }
 }
