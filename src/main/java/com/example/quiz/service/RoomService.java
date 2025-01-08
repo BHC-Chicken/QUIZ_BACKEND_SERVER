@@ -135,7 +135,9 @@ public class RoomService {
     }
 
     private void addUserToGame(Game game, InGameUser inGameUser, long roomId, int currentCount) {
+        // 실제 유저 추가 && 참가자수 갱신
         game.getGameUser().add(inGameUser);
+        game.changeCurrentParticipantsNo(game.getGameUser().size());
         gameRepository.save(game);
 
         publisher.publishEvent(new ChangeCurrentOccupancies(roomId, currentCount));
