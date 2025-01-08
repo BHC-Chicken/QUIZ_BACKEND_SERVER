@@ -51,18 +51,17 @@ public class RoomService {
         InGameUser inGameUser = findUser(roomId, loginUserRequest);
 
         Set<InGameUser> inGameUserSet = game.getGameUser();
+        for(InGameUser inGameUser1 : inGameUserSet) {
+            log.info("User: {}", inGameUser1.getId());
+        }
         isAdmin = isAdmin(inGameUser);
 
         if (isUserAlreadyInGame(game, inGameUser)) {
             //addUserToGame(game, inGameUser, roomId, currentCount);
-            System.out.println(inGameUser.getId());
-            inGameUserSet.add(inGameUser);
-            for(InGameUser inGameUser2 : inGameUserSet) {
-                System.out.println(inGameUser2.getId());
-            }
+            //inGameUserSet.add(inGameUser);
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
         }
-        inGameUserSet.add(inGameUser);
+        //inGameUserSet.add(inGameUser);
         addUserToGame(game, inGameUser, roomId, currentCount);
         return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
     }
@@ -140,6 +139,6 @@ public class RoomService {
         gameRepository.save(game);
 
         publisher.publishEvent(new ChangeCurrentOccupancies(roomId, currentCount));
-        log.info("roomId: {}", currentCount);
+        //log.info("roomId: {}", currentCount);
     }
 }
