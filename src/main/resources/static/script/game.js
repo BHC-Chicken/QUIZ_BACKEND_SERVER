@@ -1,8 +1,11 @@
-window.onload = connect;
 window.onbeforeunload = disconnect;
 
 let stompClient;
 let subscription;
+
+const RECONNECT_DELAY = 5000;
+const MAX_RECONNECT_ATTEMPTS = 10;
+let reconnectAttempts = 0;
 
 document.addEventListener("DOMContentLoaded", function () {
     connect();
@@ -17,25 +20,48 @@ function connect() {
     const roomId = document.getElementById("roomId").textContent.trim();
     const isAdmin = document.getElementById("isAdmin").textContent.trim() === "true";
 
-    stompClient.connect({}, function (frame) {
+    stompClient.debug = function (str) {
+        if (str.includes(">>> PONG") || str.includes("<<< PING")) {
+            console.log("[HEARTBEAT]", str);
+        } else {
+            console.debug(str);
+        }
+    };
+
+    stompClient.connect({ "heart-beat": "10000,10000" }, function (frame) {
         console.log("Connected to WebSocket:", frame);
 
-        // 참가자 실시간 업데이트 구독
-        stompClient.subscribe(`/pub/room/${roomId}/participants`, function (res) {
-            const participants = JSON.parse(res.body);
-            console.log("Received participants update:", participants);
-            console.log("admin state is {}", isAdmin);
-            updateParticipants(participants, isAdmin, roomId);
-        });
+        stompClient.debug = function (str) {
+            if (str.includes(">>> PONG") || str.includes("<<< PING")) {
+                console.log("[HEARTBEAT]", str.trim());
+            } else {
+                console.log("[DEBUG]", str.trim());
+            }
+        };
 
-        // Ready 버튼 설정
+        reconnectAttempts = 0;
+
+        setupSubscriptions(roomId, isAdmin);
         setupReadyButtons(roomId);
 
-        // Start 버튼 설정 (Admin 전용)
         if (isAdmin) {
             setupStartButtons(roomId);
         }
+    }, function (error) {
+        console.log("WebSocket connection error or disconnected: ", error);
+
+        scheduleReconnect();
     });
+}
+
+function setupSubscriptions(roomId, isAdmin) {
+    if (stompClient && stompClient.connected) {
+        stompClient.subscribe(`/pub/room/${roomId}/participants`, function (res) {
+            const participants = JSON.parse(res.body);
+            console.log("Received participants update:", participants);
+            updateParticipants(participants, isAdmin, roomId);
+        });
+    }
 }
 
 // WebSocket 연결 해제
@@ -145,9 +171,23 @@ function updateParticipants(participants, isAdmin, roomId) {
         participantsTable.appendChild(row);
     });
 
-    // 이벤트 리스너 재설정
     setupReadyButtons(roomId);
     if (isAdmin) {
         setupStartButtons(roomId);
     }
+}
+
+function scheduleReconnect() {
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error(`Max reconnect attempts reached (${MAX_RECONNECT_ATTEMPTS}). Giving up.`);
+
+        return;
+    }
+
+    reconnectAttempts++;
+    console.log(`Attempting to reconnect in ${RECONNECT_DELAY / 1000} seconds...`);
+
+    setTimeout(() => {
+        connect();
+    }, RECONNECT_DELAY);
 }
