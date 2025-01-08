@@ -1,55 +1,29 @@
-// /script/game.js
-
 window.onload = connect;
 window.onbeforeunload = disconnect;
 
 let stompClient;
 let subscription;
 
-// WebSocket 연결 함수
+
+document.addEventListener("DOMContentLoaded", function() {
+    connect();
+    setupReadyButtons();
+});
+
 function connect() {
-    let socket = new SockJS("/game"); // 서버의 WebSocket 엔드포인트와 일치해야 합니다.
+    let socket = new SockJS("/game");
     stompClient = Stomp.over(socket);
 
     stompClient.connect({}, function (frame) {
-        console.log('Connected: ' + frame);
+        console.log("Connected to WebSocket:", frame);
 
-        let roomId = getRoomIdFromURL(); // URL에서 roomId 추출
-        if (!roomId) {
-            console.error('Room ID not found in URL');
-            return;
-        }
-
-        // "/room/{roomId}" 토픽을 구독
+        let roomId = window.location.pathname.split('/')[2];
         subscription = stompClient.subscribe("/room/" + roomId, function (res) {
-            console.log('Received message: ', res.body);
-            let response = JSON.parse(res.body);
-
-            // 메시지 타입에 따라 처리
-            if (response.type === 'UserLeft') {
-                removeUserFromTable(response.userId);
-            } else {
-                updateUserTable(response);
-            }
+            console.log(res);
         });
-
-        // 필요 시 초기 사용자 목록 요청
-        // stompClient.send(`/app/${roomId}/getUsers`, {}, {});
-    }, function (error) {
-        console.error('STOMP error: ', error);
-    });
-
-    // 버튼 클릭 이벤트 핸들러 등록
-    document.addEventListener('click', function (event) {
-        if (event.target.classList.contains('ready-btn')) {
-            toggleReadyStatus(event);
-        } else if (event.target.classList.contains('start-btn')) {
-            startGame(event);
-        }
     });
 }
 
-// WebSocket 연결 해제 함수
 function disconnect() {
     if (stompClient !== null) {
         if (subscription !== null) {
@@ -59,126 +33,52 @@ function disconnect() {
     }
 }
 
-// URL에서 roomId 추출 함수
-function getRoomIdFromURL() {
-    // 예: URL이 /room/1234 일 경우 1234 추출
-    let path = window.location.pathname;
-    let parts = path.split('/');
-    return parts.length >= 3 ? parts[2] : null;
+function setupReadyButtons() {
+    const readyButtons = document.querySelectorAll(".ready-btn");
+    readyButtons.forEach((btn) => {
+        btn.addEventListener("click", function() {
+            const userId = btn.getAttribute("data-user-id");
+            const roomId = window.location.pathname.split('/')[2];
+
+            subscription = stompClient.subscribe("/pub/" + roomId, function (res) {
+                console.log(res);
+                const message = JSON.parse(res.body);
+
+                handleServerMessage(message);
+            });
+
+            // 1) 서버로 메시지 전송
+            // 서버 @MessageMapping("/{id}")와 매칭 → 최종 경로 "/room/{id}"
+            stompClient.send(`/room/${roomId}`, {}, JSON.stringify({ userId: userId }));
+
+            console.log("Sent ready toggle for user:", userId);
+        });
+    });
 }
 
-// 사용자 테이블 업데이트 함수
-function updateUserTable(response) {
-    // ResponseMessage에서 데이터 추출
-    let { userId, userName, readyStatus, role } = response;
-
-    // 기존 사용자 행 찾기
-    let userRow = document.getElementById(`user-${userId}`);
-
-    if (userRow) {
-        // 기존 사용자 정보 업데이트
-        userRow.querySelector('.ready-status').textContent = readyStatus ? "Ready" : "Not Ready";
-        userRow.querySelector('.ready-status').className = readyStatus ? "ready-status ready-true" : "ready-status ready-false";
-        userRow.querySelector('.role').textContent = role;
-        userRow.querySelector('.role').className = role === "ADMIN" ? "role admin" : "role";
-
-        // 버튼 업데이트
-        let roleCell = userRow.querySelector('.role');
-        roleCell.innerHTML = ''; // 기존 버튼 제거
-
-        if (role === "ADMIN") {
-            let startButton = document.createElement("button");
-            startButton.textContent = "Start Game";
-            startButton.className = "start-btn";
-            startButton.setAttribute("data-user-id", userId);
-            roleCell.appendChild(startButton);
-        } else if (role === "USER") {
-            let readyButton = document.createElement("button");
-            readyButton.textContent = "Toggle Ready";
-            readyButton.className = "ready-btn";
-            readyButton.setAttribute("data-user-id", userId);
-            roleCell.appendChild(readyButton);
-        }
+function handleServerMessage(message) {
+    // 서버에서 { type: "readyStatus", userId: 123, status: true/false } 라고 보냄 가정
+    updateParticipantStatus(message.userId, message.readyStatus);
+    if (message.userId === 1) {
+        updateGameStatus(message.readyStatus);
     } else {
-        // 새로운 사용자 행 추가
-        addUserToTable(userId, userName, readyStatus, role);
+        console.warn("Unknown message type:", message);
     }
 }
 
-// 사용자 테이블에 새로운 행 추가 함수
-function addUserToTable(userId, userName, readyStatus, role) {
-    const userTableBody = document.querySelector("#userTable tbody");
-    let userRow = document.createElement("tr");
-    userRow.id = `user-${userId}`;
-
-    // User ID 셀
-    let userIdCell = document.createElement("td");
-    userIdCell.textContent = userId;
-    userRow.appendChild(userIdCell);
-
-    // User Name 셀
-    let userNameCell = document.createElement("td");
-    userNameCell.textContent = userName;
-    userRow.appendChild(userNameCell);
-
-    // Ready Status 셀
-    let readyStatusCell = document.createElement("td");
-    readyStatusCell.textContent = readyStatus ? "Ready" : "Not Ready";
-    readyStatusCell.className = readyStatus ? "ready-status ready-true" : "ready-status ready-false";
-    userRow.appendChild(readyStatusCell);
-
-    // Role 셀
-    let roleCell = document.createElement("td");
-    roleCell.textContent = role;
-    roleCell.className = role === "ADMIN" ? "role admin" : "role";
-
-    // 버튼 추가
-    if (role === "ADMIN") {
-        let startButton = document.createElement("button");
-        startButton.textContent = "Start Game";
-        startButton.className = "start-btn";
-        startButton.setAttribute("data-user-id", userId);
-        roleCell.appendChild(startButton);
-    } else if (role === "USER") {
-        let readyButton = document.createElement("button");
-        readyButton.textContent = "Toggle Ready";
-        readyButton.className = "ready-btn";
-        readyButton.setAttribute("data-user-id", userId);
-        roleCell.appendChild(readyButton);
-    }
-
-    userRow.appendChild(roleCell);
-
-    // 테이블 본문에 행 추가
-    userTableBody.appendChild(userRow);
-}
-
-// Ready Status 토글 함수 (버튼 클릭 시 호출)
-function toggleReadyStatus(event) {
-    let userId = event.target.getAttribute("data-user-id");
-    let roomId = getRoomIdFromURL();
-
-    if (userId && roomId) {
-        // 서버에 Ready 상태 토글 요청 보내기
-        stompClient.send(`/app/${roomId}/ready`, {}, JSON.stringify({ userId: userId }));
+function updateParticipantStatus(userId, status) {
+    console.log("updateParticipantStatus called!", userId, status);
+    const row = document.querySelector(`[data-user-id="${userId}"]`);
+    if (row) {
+        // Ready/Not Ready가 표시된 셀(3번째 열) 업데이트
+        const statusCell = row.closest("tr").querySelector("td:nth-child(3)");
+        if (statusCell) {
+            statusCell.innerText = status ? "Ready" : "Not Ready";
+        }
     }
 }
 
-// Start Game 함수 (버튼 클릭 시 호출)
-function startGame(event) {
-    let userId = event.target.getAttribute("data-user-id");
-    let roomId = getRoomIdFromURL();
-
-    if (userId && roomId) {
-        // 서버에 게임 시작 요청 보내기
-        stompClient.send(`/app/${roomId}/start`, {}, JSON.stringify({ userId: userId }));
-    }
-}
-
-// 사용자 테이블에서 사용자 제거 함수 (사용자 퇴장 시)
-function removeUserFromTable(userId) {
-    let userRow = document.getElementById(`user-${userId}`);
-    if (userRow) {
-        userRow.remove();
-    }
+function updateGameStatus(status) {
+    const gameStatusElement = document.getElementById("gameStatus");
+    gameStatusElement.innerText = status ? "Started" : "Not Started";
 }
