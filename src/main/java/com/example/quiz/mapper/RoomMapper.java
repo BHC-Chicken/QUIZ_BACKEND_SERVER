@@ -10,7 +10,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
-import java.util.List;
 import java.util.Set;
 
 @Mapper
@@ -25,6 +24,7 @@ public interface RoomMapper {
 
     RoomListResponse RoomToRoomListResponse(Room room, Integer currentPeople);
 
+    @Mapping(source = "room.roomId", target = "roomId")
     @Mapping(target = "participants", source = "set")
     RoomEnterResponse RoomToRoomEnterResponse(Room room, Boolean isAdmin, Set<InGameUser> set);
 }

@@ -43,7 +43,8 @@ public class GameService {
 
         // 현재 로그인한 InGameUser 반환
         Set<InGameUser> inGameUserSet = game.getGameUser();
-        InGameUser currentUser = findUser(inGameUserSet, userId); // TODO Optional 반환값으로 변환
+        // TODO Optional 반환값으로 변환
+        InGameUser currentUser = findUser(inGameUserSet, userId);
 
         // 준비상태 토글
         toggle(game, currentUser);

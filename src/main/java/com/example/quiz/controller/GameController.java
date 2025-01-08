@@ -20,14 +20,14 @@ public class GameController {
 
      // 메세지 템플릿을 사용하여 데이터를 전달
      // 이유는 게임의 상태를 정의 할때와 게임의 시작할때 전송하는 데이터의 구조가 변경이 된므로 템플릿사용
-    private SimpMessagingTemplate messagingTemplate;
-
+    private final SimpMessagingTemplate messagingTemplate;
     private final GameService gameService;
 
     @MessageMapping("/{id}")
-    public void ready(@DestinationVariable String id, RequestUserId requestUserId){
+    public void ready(@DestinationVariable String id, RequestUserId requestUserId) {
+        log.info("userID is {}", requestUserId.userId());
         ResponseMessage responseMessage = gameService.toggleReadyStatus(id, requestUserId.userId());
-        log.info("role : {}, userId : {}, readyStatus : {} email : {}" , responseMessage.role(), responseMessage.userId(), responseMessage.allReadyStatus(), responseMessage.email());
+        log.info("role : {}, userId : {}, readyStatus : {}, email : {}" , responseMessage.role(), responseMessage.userId(), responseMessage.allReadyStatus(), responseMessage.email());
         messagingTemplate.convertAndSend("/pub/"+id,responseMessage);
     }
 
