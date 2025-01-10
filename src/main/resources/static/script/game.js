@@ -18,8 +18,11 @@ function connect() {
         console.log("Connected to WebSocket:", frame);
 
         let roomId = window.location.pathname.split('/')[2];
-        subscription = stompClient.subscribe("/room/" + roomId, function (res) {
+        subscription = stompClient.subscribe(`/pub/room/${roomId}/participants`, function (res) {
             console.log(res);
+            const participant = JSON.parse(res.body);
+            console.log("Received participants update:", participant);
+            updateParticipant(participant);
         });
     });
 }
@@ -43,7 +46,8 @@ function setupReadyButtons() {
             subscription = stompClient.subscribe("/pub/" + roomId, function (res) {
                 console.log(res);
                 const message = JSON.parse(res.body);
-
+                console.log("user Id is {}", message.userId);
+                console.log("readyStatus is {}", message.readyStatus);
                 handleServerMessage(message);
             });
 
@@ -81,4 +85,50 @@ function updateParticipantStatus(userId, status) {
 function updateGameStatus(status) {
     const gameStatusElement = document.getElementById("gameStatus");
     gameStatusElement.innerText = status ? "Started" : "Not Started";
+}
+
+function updateParticipant(participant) {
+    const participantsTable = document.getElementById("participants");
+
+    // 기존 사용자 확인
+    const existingRow = participantsTable.querySelector(`tr[data-user-id="${participant.id}"]`);
+
+    if (existingRow) {
+        // 기존 사용자가 있으면 Ready Status만 업데이트
+        const readyStatusCell = existingRow.querySelector("td:nth-child(3)");
+        readyStatusCell.textContent = participant.readyStatus ? "Ready" : "Not Ready";
+        readyStatusCell.classList.toggle("ready-true", participant.readyStatus);
+        readyStatusCell.classList.toggle("ready-false", !participant.readyStatus);
+    } else {
+        // 새 사용자 추가
+        const row = document.createElement("tr");
+        row.setAttribute("data-user-id", participant.id);
+
+        // User ID
+        const idCell = document.createElement("td");
+        idCell.textContent = participant.id;
+        row.appendChild(idCell);
+
+        // Username
+        const usernameCell = document.createElement("td");
+        usernameCell.textContent = participant.username;
+        row.appendChild(usernameCell);
+
+        // Ready Status
+        const readyStatusCell = document.createElement("td");
+        readyStatusCell.textContent = participant.readyStatus ? "Ready" : "Not Ready";
+        readyStatusCell.classList.add(participant.readyStatus ? "ready-true" : "ready-false");
+        row.appendChild(readyStatusCell);
+
+        // Actions (Optional: Ready 버튼 추가)
+        const actionsCell = document.createElement("td");
+        const readyBtn = document.createElement("button");
+        readyBtn.textContent = "Toggle Ready";
+        readyBtn.classList.add("ready-btn");
+        readyBtn.setAttribute("data-user-id", participant.id);
+        actionsCell.appendChild(readyBtn);
+        row.appendChild(actionsCell);
+
+        participantsTable.appendChild(row);
+    }
 }

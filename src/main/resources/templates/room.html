@@ -89,7 +89,7 @@
                 Start Game
             </button>
             <!-- User 참가자에게만 "Toggle Ready" 버튼 표시 -->
-            <button th:if="${participant.role == T(com.example.quiz.enums.Role).USER}"
+            <button th:if="${!roomInfo.isAdmin and participant.role == T(com.example.quiz.enums.Role).USER}"
                     th:attr="data-user-id=${participant.id}"
                     class="ready-btn">
                 Toggle Ready
