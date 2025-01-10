@@ -12,13 +12,15 @@ public class InGameUser {
     private final String username;
     private final Role role;
     private boolean isReadyStatus;
+    private boolean isInGame;
 
-    public InGameUser(Long id, Long roomId, String username, Role role, boolean isReadyStatus) {
+    public InGameUser(Long id, Long roomId, String username, Role role, boolean isReadyStatus, boolean isInGame) {
         this.id = id;
         this.roomId = roomId;
         this.username = username;
         this.role = role;
         this.isReadyStatus = isReadyStatus;
+        this.isInGame = isInGame;
     }
 
     @Override
@@ -35,5 +37,9 @@ public class InGameUser {
 
     public void changeReadyStatus(boolean readyStatus) {
         this.isReadyStatus = readyStatus;
+    }
+
+    public void changeInGame(boolean inGame) {
+        this.isInGame = inGame;
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,11 +58,8 @@ public class RoomService {
         isAdmin = isAdmin(inGameUser);
 
         if (isUserAlreadyInGame(game, inGameUser)) {
-            //addUserToGame(game, inGameUser, roomId, currentCount);
-            //inGameUserSet.add(inGameUser);
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
         }
-        //inGameUserSet.add(inGameUser);
         addUserToGame(game, inGameUser, roomId, currentCount);
         return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
     }
@@ -84,9 +82,9 @@ public class RoomService {
         Room room = findRoomById(roomId);
         // MasterEmail 비교해서 Admin 구분
         if(loginUserRequest.email().equals(room.getMasterEmail())) {
-            return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.ADMIN, false);
+            return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.ADMIN, false, false);
         }
-        return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false);
+        return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false, false);
     }
 
     private int incrementSubscriptionCount(long roomId, Long userId) {

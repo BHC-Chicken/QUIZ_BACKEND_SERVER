@@ -128,6 +128,6 @@ public class StompEventListener {
     private InGameUser findUser(long userId, long roomId) throws IllegalAccessException {
         User user = userRepository.findById(userId).orElseThrow(IllegalAccessException::new);
 
-        return new InGameUser(roomId, user.getId(), user.getEmail(), Role.USER, false);
+        return new InGameUser(roomId, user.getId(), user.getEmail(), Role.USER, false, false);
     }
 }
