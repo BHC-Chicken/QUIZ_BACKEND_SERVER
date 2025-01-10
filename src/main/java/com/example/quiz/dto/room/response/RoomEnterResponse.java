@@ -12,5 +12,6 @@ public record RoomEnterResponse (
         Integer quizCount,
         boolean removeStatus,
         boolean isAdmin,
+        boolean isInGame,
         Set<InGameUser> participants
 ) {}
