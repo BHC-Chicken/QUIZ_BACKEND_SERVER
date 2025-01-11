@@ -31,26 +31,13 @@ function connect() {
     stompClient.connect({ "heart-beat": "10000,10000" }, function (frame) {
         console.log("Connected to WebSocket:", frame);
 
-        stompClient.debug = function (str) {
-            if (str.includes(">>> PONG") || str.includes("<<< PING")) {
-                console.log("[HEARTBEAT]", str.trim());
-            } else {
-                console.log("[DEBUG]", str.trim());
-            }
-        };
-
-        reconnectAttempts = 0;
-
-        setupSubscriptions(roomId, isAdmin);
-        setupReadyButtons(roomId);
-
-        if (isAdmin) {
-            setupStartButtons(roomId);
-        }
-    }, function (error) {
-        console.log("WebSocket connection error or disconnected: ", error);
-
-        scheduleReconnect();
+        let roomId = window.location.pathname.split('/')[2];
+        subscription = stompClient.subscribe(`/pub/room/${roomId}/participants`, function (res) {
+            console.log(res);
+            const participant = JSON.parse(res.body);
+            console.log("Received participants update:", participant);
+            updateParticipant(participant);
+        });
     });
 }
 
@@ -79,16 +66,13 @@ function setupReadyButtons(roomId) {
         btn.addEventListener("click", function () {
             const userId = btn.getAttribute("data-user-id");
 
-            // 서버에 Ready 상태 변경 요청
-            stompClient.send(`/room/${roomId}/ready`, {}, JSON.stringify({ userId: userId }));
-            console.log("Sent ready toggle for user:", userId);
-        });
-    });
-
-    // 서버로부터 메시지 받기
-    stompClient.subscribe(`/pub/room/${roomId}`, function (res) {
-        const responseMessage = JSON.parse(res.body);
-        console.log("Received message from server:", responseMessage);
+            subscription = stompClient.subscribe("/pub/" + roomId, function (res) {
+                console.log(res);
+                const message = JSON.parse(res.body);
+                console.log("user Id is {}", message.userId);
+                console.log("readyStatus is {}", message.readyStatus);
+                handleServerMessage(message);
+            });
 
         // 원하는 값 출력
         console.log("Ready Status:", responseMessage.readyStatus);
@@ -190,4 +174,50 @@ function scheduleReconnect() {
     setTimeout(() => {
         connect();
     }, RECONNECT_DELAY);
+}
+
+function updateParticipant(participant) {
+    const participantsTable = document.getElementById("participants");
+
+    // 기존 사용자 확인
+    const existingRow = participantsTable.querySelector(`tr[data-user-id="${participant.id}"]`);
+
+    if (existingRow) {
+        // 기존 사용자가 있으면 Ready Status만 업데이트
+        const readyStatusCell = existingRow.querySelector("td:nth-child(3)");
+        readyStatusCell.textContent = participant.readyStatus ? "Ready" : "Not Ready";
+        readyStatusCell.classList.toggle("ready-true", participant.readyStatus);
+        readyStatusCell.classList.toggle("ready-false", !participant.readyStatus);
+    } else {
+        // 새 사용자 추가
+        const row = document.createElement("tr");
+        row.setAttribute("data-user-id", participant.id);
+
+        // User ID
+        const idCell = document.createElement("td");
+        idCell.textContent = participant.id;
+        row.appendChild(idCell);
+
+        // Username
+        const usernameCell = document.createElement("td");
+        usernameCell.textContent = participant.username;
+        row.appendChild(usernameCell);
+
+        // Ready Status
+        const readyStatusCell = document.createElement("td");
+        readyStatusCell.textContent = participant.readyStatus ? "Ready" : "Not Ready";
+        readyStatusCell.classList.add(participant.readyStatus ? "ready-true" : "ready-false");
+        row.appendChild(readyStatusCell);
+
+        // Actions (Optional: Ready 버튼 추가)
+        const actionsCell = document.createElement("td");
+        const readyBtn = document.createElement("button");
+        readyBtn.textContent = "Toggle Ready";
+        readyBtn.classList.add("ready-btn");
+        readyBtn.setAttribute("data-user-id", participant.id);
+        actionsCell.appendChild(readyBtn);
+        row.appendChild(actionsCell);
+
+        participantsTable.appendChild(row);
+    }
 }

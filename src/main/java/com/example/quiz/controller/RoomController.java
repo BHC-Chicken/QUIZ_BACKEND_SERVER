@@ -20,10 +20,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -63,6 +60,13 @@ public class RoomController {
         // 참가자 입장 메시지 브로드캐스트
         simpMessagingTemplate.convertAndSend("/pub/room/" + roomId + "/participants", roomEnterResponse.participants());
 
+        Set<InGameUser> set = roomEnterResponse.participants();
+        for(InGameUser participant : set) {
+            if(Objects.equals(participant.getId(), loginUserRequest.userId())) {
+                // 실시간 참가자 정보 브로드캐스트
+                simpMessagingTemplate.convertAndSend("/pub/room/" + roomId + "/participants", participant);
+            }
+        }
         return new ModelAndView("room", map);
     }
 
