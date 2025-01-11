@@ -24,7 +24,8 @@ public interface RoomMapper {
 
     RoomListResponse RoomToRoomListResponse(Room room, Integer currentPeople);
 
-    @Mapping(source = "room.roomId", target = "roomId")
+    @Mapping(target = "roomId", source = "room.roomId")
     @Mapping(target = "participants", source = "set")
-    RoomEnterResponse RoomToRoomEnterResponse(Room room, Boolean isAdmin, Set<InGameUser> set);
+    @Mapping(source = "inGameUser", target = "inGameUser")
+    RoomEnterResponse RoomToRoomEnterResponse(Room room, InGameUser inGameUser, Set<InGameUser> set);
 }
