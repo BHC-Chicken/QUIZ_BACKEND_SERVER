@@ -1,0 +1,47 @@
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    vertical-align: middle;
+    text-align: center;
+}
+th {
+    background-color: #f2f2f2;
+    text-align: center;
+}
+.ready-true {
+    color: green;
+    font-weight: bold;
+}
+.ready-false {
+    color: red;
+    font-weight: bold;
+}
+.admin {
+    background-color: #ffd700;
+}
+.start-btn, .ready-btn {
+    padding: 5px 10px;
+    margin: 2px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.start-btn {
+    background-color: #4CAF50; /* Green */
+    color: white;
+}
+.ready-btn {
+    background-color: #008CBA; /* Blue */
+    color: white;
+}
+.start-btn:hover {
+    background-color: #45a049;
+}
+.ready-btn:hover {
+    background-color: #007bb5;
+}

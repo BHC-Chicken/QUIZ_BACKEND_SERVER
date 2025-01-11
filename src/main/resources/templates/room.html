@@ -3,14 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Room</title>
+    <link rel="stylesheet" href="/static/css/game.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="/script/game.js"></script>
-    <!-- 별도의 JS 파일로 관리하는 것을 권장 -->
-    <style>
-        /* 기존 스타일 유지 */
-        /* ... */
-    </style>
 </head>
 <body>
 <h1>Room Information</h1>
@@ -19,6 +15,10 @@
 <p><strong>Topic ID: </strong><span th:text="${roomInfo.topicId}"></span></p>
 <p><strong>Max People: </strong><span th:text="${roomInfo.maxPeople}"></span></p>
 <p><strong>Quiz Count: </strong><span th:text="${roomInfo.quizCount}"></span></p>
+
+<!-- 숨겨진 요소에 roomId 및 isAdmin 저장 -->
+<div id="roomId" th:text="${roomInfo.roomId}" style="display:none;"></div>
+<div id="isAdmin" th:text="${roomInfo.role}" style="display:none;"></div>
 
 <!-- 단일 Ready 버튼 추가: "내" Ready 상태만 토글 -->
 <button id="ready-btn"
@@ -44,7 +44,7 @@
     </tr>
     </thead>
     <tbody id="participants">
-    <tr th:each="participant : ${roomInfo.participants}">
+    <tr th:each="participant : ${roomInfo.participants}" th:attr="data-user-id=${participant.id}">
         <td th:text="${participant.id}"></td>
         <td th:text="${participant.username}"></td>
         <td th:text="${participant.readyStatus ? 'Ready' : 'Not Ready'}"
@@ -65,7 +65,6 @@
 <script>
     // 클라이언트 측에서 isAdmin을 읽어 변수로 설정
     const isAdminElement = document.getElementById('isAdmin');
-    const isAdmin = isAdminElement.textContent.trim() === 'true';
 </script>
 
 </body>
