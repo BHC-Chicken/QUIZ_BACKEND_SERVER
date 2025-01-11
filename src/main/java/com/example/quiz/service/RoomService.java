@@ -22,8 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -42,9 +40,6 @@ public class RoomService {
     public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         validateLoginUser(loginUserRequest);
         checkAlreadyInGameUser(roomId, loginUserRequest.userId());
-
-        log.info("User Id: {}", loginUserRequest.userId());
-        log.info("Room Id: {}", roomId);
 
         Room room = findRoomById(roomId);
         Game game = findGameByRoomId(roomId);
@@ -74,15 +69,16 @@ public class RoomService {
     private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
         Room room = findRoomById(roomId);
-        // MasterEmail 비교해서 Admin 구분
-        if(loginUserRequest.email().equals(room.getMasterEmail())) {
-            return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.ADMIN, false, false);
+
+        if (loginUserRequest.email().equals(room.getMasterEmail())) {
+            return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.ADMIN, false);
         }
-        return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false, false);
+
+        return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false);
     }
 
     private int incrementSubscriptionCount(long roomId, Long userId) {
-        int current = roomSubscriptionCount.get(roomId).updateAndGet(c -> {
+        return roomSubscriptionCount.get(roomId).updateAndGet(c -> {
             if (c >= 8) {
                 throw new RuntimeException("Room capacity reached : " + roomId);
             }
@@ -91,10 +87,6 @@ public class RoomService {
 
             return c + 1;
         });
-
-        log.info("count: {}, userId: {},", current, userId);
-
-        return current;
     }
 
     private void validateLoginUser(LoginUserRequest loginUserRequest) throws IllegalAccessException {
@@ -130,12 +122,10 @@ public class RoomService {
     }
 
     private void addUserToGame(Game game, InGameUser inGameUser, long roomId, int currentCount) {
-        // 실제 유저 추가 && 참가자수 갱신
         game.getGameUser().add(inGameUser);
         game.changeCurrentParticipantsNo(game.getGameUser().size());
         gameRepository.save(game);
 
         publisher.publishEvent(new ChangeCurrentOccupancies(roomId, currentCount));
-        //log.info("roomId: {}", currentCount);
     }
 }

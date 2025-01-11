@@ -103,8 +103,6 @@ public class StompEventListener {
             throw new IllegalAccessException("Login user is null in session attributes");
         }
 
-        log.info("unsub session: {}", loginUserRequest.userId());
-
         return loginUserRequest;
     }
 
@@ -146,7 +144,6 @@ public class StompEventListener {
             return current - 1;
         });
 
-        log.info("current people: {}", currentCount);
         publisher.publishEvent(new ChangeCurrentOccupancies(roomId, currentCount));
 
         if (currentCount <= 0) {
@@ -162,6 +159,6 @@ public class StompEventListener {
     private InGameUser findUser(long userId, long roomId) throws IllegalAccessException {
         User user = userRepository.findById(userId).orElseThrow(IllegalAccessException::new);
 
-        return new InGameUser(roomId, user.getId(), user.getEmail(), Role.USER, false, false);
+        return new InGameUser(user.getId(), roomId, user.getEmail(), Role.USER, false);
     }
 }
