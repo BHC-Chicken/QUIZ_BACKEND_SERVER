@@ -27,14 +27,8 @@ public class GameController {
     public void ready(@DestinationVariable String id, RequestUserId requestUserId) {
         log.info("user ID is {}", requestUserId.userId());
         ResponseMessage responseMessage = gameService.toggleReadyStatus(id, requestUserId.userId());
-        log.info("id : {} role : {}, userId : {}, readyStatus : {}, email : {}" ,
-                id,
-                responseMessage.role(),
-                responseMessage.userId(),
-                responseMessage.readyStatus(),
-                responseMessage.email()
-        );
-        messagingTemplate.convertAndSend("/pub/room/"+id, responseMessage);
+        log.info("role : {}, userId : {}, readyStatus : {}, email : {}" , responseMessage.role(), responseMessage.userId(), responseMessage.readyStatus(), responseMessage.email());
+        messagingTemplate.convertAndSend("/pub/room/"+id,responseMessage);
     }
 
     @MessageMapping("/{id}/send")
