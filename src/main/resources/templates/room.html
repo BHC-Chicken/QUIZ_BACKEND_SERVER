@@ -5,56 +5,11 @@
     <title>Room</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-    <script src="/script/game.js"></script> <!-- 별도의 JS 파일로 관리하는 것을 권장 -->
+    <script src="/script/game.js"></script>
+    <!-- 별도의 JS 파일로 관리하는 것을 권장 -->
     <style>
         /* 기존 스타일 유지 */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            vertical-align: middle;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-            text-align: center;
-        }
-        .ready-true {
-            color: green;
-            font-weight: bold;
-        }
-        .ready-false {
-            color: red;
-            font-weight: bold;
-        }
-        .admin {
-            background-color: #ffd700;
-        }
-        .start-btn, .ready-btn {
-            padding: 5px 10px;
-            margin: 2px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .start-btn {
-            background-color: #4CAF50; /* Green */
-            color: white;
-        }
-        .ready-btn {
-            background-color: #008CBA; /* Blue */
-            color: white;
-        }
-        .start-btn:hover {
-            background-color: #45a049;
-        }
-        .ready-btn:hover {
-            background-color: #007bb5;
-        }
+        /* ... */
     </style>
 </head>
 <body>
@@ -65,9 +20,19 @@
 <p><strong>Max People: </strong><span th:text="${roomInfo.maxPeople}"></span></p>
 <p><strong>Quiz Count: </strong><span th:text="${roomInfo.quizCount}"></span></p>
 
-<!-- 숨겨진 요소에 roomId 및 isAdmin 저장 -->
-<div id="roomId" th:text="${roomInfo.roomId}" style="display:none;"></div>
-<div id="isAdmin" th:text="${roomInfo.isAdmin}" style="display:none;"></div>
+<!-- 단일 Ready 버튼 추가: "내" Ready 상태만 토글 -->
+<button id="ready-btn"
+        th:if="${roomInfo.role() == T(com.example.quiz.enums.Role).USER}"
+        th:attr="data-user-id=${roomInfo.inGameUser().id}">
+    Ready Game
+</button>
+
+<!-- 방장(Admin)만 Start Game 버튼 등 필요시 추가 -->
+<button id="start-btn"
+        th:if="${roomInfo.role() == T(com.example.quiz.enums.Role).ADMIN}"
+        th:attr="data-user-id=${roomInfo.inGameUser().id}">
+    Start Game
+</button>
 
 <h2>Users in Room</h2>
 <table id="userTable">
@@ -76,7 +41,6 @@
         <th>User ID</th>
         <th>User Name</th>
         <th>Ready Status</th>
-        <th>Actions</th> <!-- "Role" 대신 "Actions" 열로 변경 -->
     </tr>
     </thead>
     <tbody id="participants">
@@ -84,20 +48,7 @@
         <td th:text="${participant.id}"></td>
         <td th:text="${participant.username}"></td>
         <td th:text="${participant.readyStatus ? 'Ready' : 'Not Ready'}"
-            th:classappend="${participant.readyStatus ? 'ready-true' : 'ready-false'}"></td>
-        <td>
-            <!-- Admin 참가자에게만 "Start Game" 버튼 표시 -->
-            <button th:if="${roomInfo.isAdmin and participant.role == T(com.example.quiz.enums.Role).ADMIN}"
-                    th:attr="data-user-id=${participant.id}"
-                    class="start-btn">
-                Start Game
-            </button>
-            <!-- User 참가자에게만 "Toggle Ready" 버튼 표시 -->
-            <button th:if="${!roomInfo.isAdmin and participant.role == T(com.example.quiz.enums.Role).USER}"
-                    th:attr="data-user-id=${participant.id}"
-                    class="ready-btn">
-                Toggle Ready
-            </button>
+            th:classappend="${participant.readyStatus ? 'ready-true' : 'ready-false'}">
         </td>
     </tr>
     </tbody>
