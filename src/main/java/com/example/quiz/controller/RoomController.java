@@ -57,13 +57,6 @@ public class RoomController {
         Map<String, Object> map = new HashMap<>();
         map.put("roomInfo", roomEnterResponse);
 
-        Set<InGameUser> set = roomEnterResponse.participants();
-        for(InGameUser participant : set) {
-            if(Objects.equals(participant.getId(), loginUserRequest.userId())) {
-                // 실시간 참가자 정보 브로드캐스트
-                simpMessagingTemplate.convertAndSend("/pub/room/" + roomId + "/participants", participant);
-            }
-        }
         return new ModelAndView("room", map);
     }
 
