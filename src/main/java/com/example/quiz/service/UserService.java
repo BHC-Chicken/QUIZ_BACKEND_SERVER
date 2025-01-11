@@ -28,8 +28,6 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 @RequiredArgsConstructor
 public class UserService {
-
-    private final JwtUtil jwtUtil;
     private final KakaoToken kakaoToken;
     private final UserRepository userRepository;
     private final KakaoProperties kakaoProperties;
@@ -44,8 +42,8 @@ public class UserService {
 
         User user = findUser(username, email);
 
-        String accessToken = jwtUtil.generateToken(user.getId(), user.getEmail());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+        String accessToken = JwtUtil.generateToken(user.getId(), user.getEmail());
+        String refreshToken = JwtUtil.generateRefreshToken(user.getId());
 
         String encodeToken = URLEncoder.encode("Bearer " + accessToken, StandardCharsets.UTF_8);
 
