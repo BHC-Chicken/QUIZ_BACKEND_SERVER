@@ -10,7 +10,6 @@ import com.example.quiz.dto.room.response.RoomModifyResponse;
 import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.service.RoomProducerService;
 import com.example.quiz.service.RoomService;
-import com.example.quiz.vo.InGameUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,7 +28,6 @@ import java.util.stream.Collectors;
 public class RoomController {
     private final RoomService roomService;
     private final RoomProducerService roomProducerService;
-    private final SimpMessagingTemplate simpMessagingTemplate;
 
     @PostMapping(value = "/room")
     public String createRoom(RoomCreateRequest roomRequest, @LoginUser LoginUserRequest loginUserRequest) throws IllegalAccessException {
@@ -57,14 +55,7 @@ public class RoomController {
         RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest);
         Map<String, Object> map = new HashMap<>();
         map.put("roomInfo", roomEnterResponse);
-
-        Set<InGameUser> set = roomEnterResponse.participants();
-        for(InGameUser participant : set) {
-            if(Objects.equals(participant.getId(), loginUserRequest.userId())) {
-                // 실시간 참가자 정보 브로드캐스트
-                simpMessagingTemplate.convertAndSend("/pub/room/" + roomId + "/participants", participant);
-            }
-        }
+        log.info(roomEnterResponse.toString());
         return new ModelAndView("room", map);
     }
 

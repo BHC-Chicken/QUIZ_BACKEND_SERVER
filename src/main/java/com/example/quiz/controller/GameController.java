@@ -28,7 +28,7 @@ public class GameController {
         log.info("userID is {}", requestUserId.userId());
         ResponseMessage responseMessage = gameService.toggleReadyStatus(id, requestUserId.userId());
         log.info("role : {}, userId : {}, readyStatus : {}, email : {}" , responseMessage.role(), responseMessage.userId(), responseMessage.readyStatus(), responseMessage.email());
-        messagingTemplate.convertAndSend("/pub/"+id,responseMessage);
+        messagingTemplate.convertAndSend("/pub/room/"+id,responseMessage);
     }
 
     @MessageMapping("/{id}/send")

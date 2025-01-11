@@ -17,6 +17,7 @@ import com.example.quiz.vo.InGameUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,39 +34,32 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final GameRepository gameRepository;
     private final ApplicationEventPublisher publisher;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
     private final Map<Long, Long> alreadyInGameUser;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
 
     public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         validateLoginUser(loginUserRequest);
-        checkAlreadyInGameUser(loginUserRequest.userId());
+        checkAlreadyInGameUser(roomId, loginUserRequest.userId());
 
         log.info("User Id: {}", loginUserRequest.userId());
         log.info("Room Id: {}", roomId);
 
-        Boolean isAdmin = false;
         Room room = findRoomById(roomId);
-        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
-
         Game game = findGameByRoomId(roomId);
         InGameUser inGameUser = findUser(roomId, loginUserRequest);
 
-        Set<InGameUser> inGameUserSet = game.getGameUser();
-        for(InGameUser inGameUser1 : inGameUserSet) {
-            log.info("User: {}", inGameUser1.getId());
+        if (isUserAlreadyInGame(roomId, loginUserRequest.userId())) {
+            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
         }
-        isAdmin = isAdmin(inGameUser);
 
-        if (isUserAlreadyInGame(game, inGameUser)) {
-            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
-        }
+        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
+
         addUserToGame(game, inGameUser, roomId, currentCount);
-        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, isAdmin, inGameUserSet);
-    }
+        simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
 
-    private boolean isAdmin(InGameUser inGameUser) {
-        return inGameUser.getRole() == Role.ADMIN;
+        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
     }
 
     @Transactional
@@ -109,11 +103,12 @@ public class RoomService {
         }
     }
 
-    private void checkAlreadyInGameUser(Long userId) {
+    private void checkAlreadyInGameUser(long roomId, long userId) {
         alreadyInGameUser.compute(userId, (key, existingValue) -> {
-            if (existingValue != null) {
+            if (existingValue != null && existingValue != roomId) {
                 throw new RuntimeException("already in game user: " + userId);
             }
+
             return null;
         });
     }
@@ -128,8 +123,10 @@ public class RoomService {
                 .orElseThrow(() -> new IllegalArgumentException("Game not found for room id: " + roomId));
     }
 
-    private boolean isUserAlreadyInGame(Game game, InGameUser inGameUser) {
-        return game.getGameUser().contains(inGameUser);
+    private boolean isUserAlreadyInGame(long roomId, long userId) {
+        Long findRoomId = alreadyInGameUser.get(userId);
+
+        return findRoomId != null && findRoomId == roomId;
     }
 
     private void addUserToGame(Game game, InGameUser inGameUser, long roomId, int currentCount) {
