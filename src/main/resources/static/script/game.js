@@ -3,32 +3,37 @@ window.addEventListener("load", () => {
 
     if (navigationEntry) {
         if (navigationEntry.type === 'navigate' || navigationEntry.type === 'reload') {
-
             connect();
+        } else if (navigationEntry.type === 'back_forward') {
+            window.location.href = '/room-list';
         }
     }
 });
 
 window.addEventListener("beforeunload", () => {
-    disconnect()
+    if (nextURL !== "quiz") {
+        disconnect()
+    }
 });
 
 let stompClient;
 let subscription;
 let allReady;
+let nextURL = null;
 
-const RECONNECT_DELAY = 5000;
-const MAX_RECONNECT_ATTEMPTS = 10;
 let reconnectAttempts = 0;
+const BASE_DELAY = 1000;
+const MAX_DELAY = 30000;
+const MAX_RECONNECT_ATTEMPTS = 10;
 
 function connect() {
     const socket = new SockJS("/game");
     stompClient = Stomp.over(socket);
 
+    reconnectAttempts = 0;
     const roomId = window.location.pathname.split('/')[2];
 
     stompClient.connect({"heart-beat": "10000,10000"}, function (frame) {
-        reconnectAttempts = 0;
         stompClient.debug = function (str) {
         };
 
@@ -38,10 +43,16 @@ function connect() {
         if (startButton === null) {
             readyButton.addEventListener("click", () => {
                 setupReadyButton(roomId, readyButton)
+                if (nextURL === null) {
+                    nextURL = "quiz";
+                } else {
+                    nextURL = null;
+                }
             });
         } else {
             startButton.addEventListener("click", () => {
                 setupStartButton(roomId);
+                nextURL = "quiz";
             });
         }
 
@@ -83,7 +94,9 @@ function setupStartButton(roomId) {
     if (!allReady) {
         alert("사용자들이 모두 준비가 완료되지 않았습니다.");
     } else {
-        stompClient.send(`/room/${roomId}/start`, {}, JSON.stringify({}));
+        stompClient.send(`/room/${roomId}/start`, {}, JSON.stringify({
+            "roomId" : roomId
+        }));
     }
 }
 
@@ -167,9 +180,9 @@ function scheduleReconnect() {
     }
 
     reconnectAttempts++;
-    console.log(`Attempting to reconnect in ${RECONNECT_DELAY / 1000} seconds...`);
+    const delay = Math.min(BASE_DELAY * Math.pow(2, reconnectAttempts), MAX_DELAY);
 
     setTimeout(() => {
         connect();
-    }, RECONNECT_DELAY);
+    }, delay);
 }
