@@ -1,6 +1,5 @@
 package com.example.quiz.controller;
 
-
 import com.example.quiz.dto.request.RequestUserId;
 import com.example.quiz.dto.response.ResponseMessage;
 import com.example.quiz.service.GameService;
@@ -27,7 +26,7 @@ public class GameController {
 
         messagingTemplate.convertAndSend("/pub/room/"+id, responseMessage);
     }
-    
+
     @MessageMapping("/{id}/start")
     public void start(@DestinationVariable String id) {
         Map<String, Object> msg = new HashMap<>();
