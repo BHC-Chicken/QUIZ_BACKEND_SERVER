@@ -42,8 +42,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-    //mongoDB
+    // mongoDB
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+    // Caffeine Cache
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 
     //spring security
     implementation "org.springframework.boot:spring-boot-starter-security"
