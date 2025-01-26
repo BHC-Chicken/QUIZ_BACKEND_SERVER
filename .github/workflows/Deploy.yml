@@ -28,7 +28,14 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build with Gradle
-        run: ./gradlew clean build
+        run: ./gradlew clean bootJar
+
+      - name: Add EC2 host to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p 30600 -H ${{ secrets.EC2_PUBLIC_IP }} >> ~/.ssh/known_hosts
+        env:
+          EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
