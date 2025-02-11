@@ -9,7 +9,7 @@ import com.example.quiz.dto.response.ResponseStartGame;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Quiz;
 import com.example.quiz.entity.Room;
-import com.example.quiz.entity.User;
+import com.example.quiz.entity.user.User;
 import com.example.quiz.enums.Role;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.QuizRepository;
