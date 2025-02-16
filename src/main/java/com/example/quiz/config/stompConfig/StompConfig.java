@@ -15,7 +15,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class StompConfig implements WebSocketMessageBrokerConfigurer {
     private final StompChannelInterceptor stompChannelInterceptor;
-    private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
+    private final CustomHandshakeInterceptor customHandshakeInterceptor;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -30,7 +30,7 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/game", "/updateOccupancy", "/ingame")
                 .setAllowedOriginPatterns("*")
-                .addInterceptors(jwtHandshakeInterceptor)
+                .addInterceptors(customHandshakeInterceptor)
                 .withSockJS();
     }
 
