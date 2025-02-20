@@ -68,7 +68,7 @@ public class RoomService {
 
         int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
 
-        if (room.getMasterEmail().equals(loginUserRequest.email()) && status == null) {
+        if (room.getMasterEmail().equals(loginUserRequest.email())) {
             publishRoomCreatedEvent(RoomMapper.INSTANCE.RoomToRoomResponse(room));
 
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
